@@ -33,6 +33,7 @@ if TYPE_CHECKING:
 
 
 def migrate(path: Path) -> None:
+    logger.info(f"Migrating storage at {path}")
     block_storage_path = _backup(path)
 
     with LocalStorageAccessor(path, ignore_migration_check=True) as storage:
@@ -55,6 +56,7 @@ def _migrate_case_ignoring_exceptions(storage: StorageAccessor, casedir: Path) -
 
 
 def migrate_case(storage: StorageAccessor, path: Path) -> None:
+    logger.info(f"Migrating case '{path.name}'")
     time_map = _load_timestamps(path / "files/time-map")
     state_map = _load_states(path / "files/state-map")
 
