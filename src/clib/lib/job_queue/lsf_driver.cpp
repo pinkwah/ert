@@ -195,11 +195,11 @@ int lsf_job_parse_bsub_stdout(const char *bsub_cmd, const char *stdout_file) {
 
         if (jobid == 0) {
             std::ifstream ifs(stdout_file);
-            std::cerr << "Failed to get lsf job id from file: " << stdout_file;
-            std::cerr << "\n";
-            std::cerr << "bsub command                      : " << bsub_cmd;
-            std::cerr << "\n";
-            std::cerr << &ifs << std::endl;
+            fmt::print(stderr, "Failed to get lsf job id from file: {}\n",
+                       stdout_file);
+            fmt::print(stderr, "bsub command                      : {}\n",
+                       bsub_cmd);
+            fmt::print(stderr, "{}\n", ifs);
             util_abort("%s: \n", __func__);
         }
     }
@@ -207,22 +207,24 @@ int lsf_job_parse_bsub_stdout(const char *bsub_cmd, const char *stdout_file) {
 }
 
 static void lsf_driver_internal_error(const lsf_driver_type *driver) {
-    std::cerr << "\n\n";
-    std::cerr << "******************************************************\n";
-    std::cerr << "The LSF driver can be configured and used in many     \n";
-    std::cerr << "different ways. Its important how we choose to submit:\n";
-    std::cerr << "                                                      \n";
-    std::cerr << "  1. Using the lsf library calls                      \n";
-    std::cerr << "  2. Using the bsub/bjobs/bkill commands locally      \n";
-    std::cerr << "                                                      \n";
-    std::cerr << "To chose between these alternatives you set the remote\n";
-    std::cerr << "server with the lsf_driver_set_option() function.     \n";
-    std::cerr << "Passing the value NULL will give alternative 1,       \n";
-    std::cerr << "passing the special string" << LOCAL_LSF_SERVER << "  \n";
-    std::cerr << "will give alternative 2, and any other value will     \n";
-    std::cerr << "submit through that host using ssh.                   \n";
-    std::cerr << "                                                      \n";
-    std::cerr << "******************************************************\n";
+    auto eprint = [](auto f) { fmt::print(stderr, f); };
+
+    eprint("\n\n");
+    eprint("******************************************************\n");
+    eprint("The LSF driver can be configured and used in many     \n");
+    eprint("different ways. Its important how we choose to submit:\n");
+    eprint("                                                      \n");
+    eprint("  1. Using the lsf library calls                      \n");
+    eprint("  2. Using the bsub/bjobs/bkill commands locally      \n");
+    eprint("                                                      \n");
+    eprint("To chose between these alternatives you set the remote\n");
+    eprint("server with the lsf_driver_set_option() function.     \n");
+    eprint("Passing the value NULL will give alternative 1,       \n");
+    eprint("passing the special string " LOCAL_LSF_SERVER "       \n");
+    eprint("will give alternative 2, and any other value will     \n");
+    eprint("submit through that host using ssh.                   \n");
+    eprint("                                                      \n");
+    eprint("******************************************************\n");
     logger->error("In lsf_driver, attempt at submitting without setting a "
                   "value for LSF_SERVER.");
     exit(1);
