@@ -3,10 +3,10 @@ from __future__ import annotations
 import json
 import logging
 from datetime import datetime
-from functools import lru_cache
+from functools import lru_cache, wraps
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional, Sequence, Tuple, Union
+from typing import TYPE_CHECKING, Callable, Concatenate, List, Optional, ParamSpec, Sequence, Tuple, TypeVar, Union
 from uuid import UUID
 
 import xarray as xr
@@ -56,6 +56,18 @@ class _Index(BaseModel):
     name: str
     prior_ensemble_id: Optional[UUID]
     started_at: datetime
+
+
+T = TypeVar("T")
+P = ParamSpec("P")
+
+
+def write_access(func: Callable[Concatenate[LocalExperimentReader, P], T]) -> Callable[Concatenate[LocalExperimentReader, P], T]:
+    @wraps(func)
+    def inner(self, *args: P.args, **kwargs: P.kwargs) -> T:
+        assert self._write_mode
+        return self.func(*args, **kwargs)
+    return inner
 
 
 # pylint: disable=R0904

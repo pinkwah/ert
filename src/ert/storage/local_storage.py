@@ -266,6 +266,15 @@ class LocalStorageAccessor(LocalStorageReader):
         self._ensembles[ens.id] = ens
         return ens
 
+    def remove_ensemble(self, uuid: UUID) -> None:
+        if (ens := self._ensembles.get(uuid)) is None:
+            return None
+
+        ens.set_mode(read=False, write=False)
+
+        del self._ensembles[uuid]
+        del self._experiments[ens.id]
+
     def _add_migration_information(self, from_version: int, name: str) -> None:
         self._index.migrations.append(
             _Migrations(
