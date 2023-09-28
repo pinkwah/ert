@@ -217,7 +217,6 @@ endif()
 # -----------------------------------------------------------------
 
 add_subdirectory(lib)
-add_subdirectory(lib/block_fs_native)
 
 if(BUILD_TESTS)
   enable_testing()

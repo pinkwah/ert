@@ -7,7 +7,7 @@ import numpy as np
 import pytest
 
 import ert.storage
-import ert.storage.migration._block_fs_native as bfn
+import ert.storage.migration._block_fs as bfn
 import ert.storage.migration.block_fs as bf
 from ert.config import ErtConfig
 from ert.storage.local_storage import local_storage_set_ert_config
