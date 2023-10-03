@@ -15,7 +15,6 @@ from ert.gui.ertwidgets.customdialog import CustomDialog
 from ert.gui.ertwidgets.listeditbox import ListEditBox
 from ert.gui.ertwidgets.models.path_model import PathModel
 from ert.gui.ertwidgets.pathchooser import PathChooser
-from ert.realization_state import RealizationState
 
 try:
     from PyQt4.QtGui import QCheckBox
@@ -179,7 +178,7 @@ class GenDataRFTCSVExportJob(ErtPlugin):
                     )
 
                 rft_data = facade.load_gen_data(ensemble, data_key, report_step)
-                realizations = ensemble.realization_list(RealizationState.HAS_DATA)
+                realizations = ensemble.complete_realizations
 
                 # Trajectory
                 trajectory_file = os.path.join(trajectory_path, f"{well}.txt")

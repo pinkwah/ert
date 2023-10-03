@@ -1,4 +1,3 @@
-from ert.realization_state import RealizationState
 from ert.storage import StorageReader
 
 
@@ -15,11 +14,4 @@ def get_runnable_realizations_mask(storage: StorageReader, casename: str):
         ensemble = storage.get_ensemble_by_name(casename)
     except KeyError:
         return []
-
-    runnable_states = [
-        RealizationState.UNDEFINED,
-        RealizationState.INITIALIZED,
-        RealizationState.LOAD_FAILURE,
-        RealizationState.HAS_DATA,
-    ]
-    return ensemble.get_realization_mask_from_state(runnable_states)
+    return ensemble.complete_realizations

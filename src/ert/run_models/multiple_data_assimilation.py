@@ -7,7 +7,6 @@ from uuid import UUID
 from ert.analysis import ErtAnalysisError
 from ert.config import HookRuntime
 from ert.ensemble_evaluator import EvaluatorServerConfig
-from ert.realization_state import RealizationState
 from ert.storage import EnsembleAccessor, StorageAccessor
 
 from .base_run_model import BaseRunModel, ErtRunError
@@ -122,10 +121,6 @@ class MultipleDataAssimilation(BaseRunModel):
                     HookRuntime.PRE_FIRST_UPDATE, self._storage, prior
                 )
             self.ert().runWorkflows(HookRuntime.PRE_UPDATE, self._storage, prior)
-            states = [
-                RealizationState.HAS_DATA,
-                RealizationState.INITIALIZED,
-            ]
             posterior_context = self.ert().ensemble_context(
                 self._storage.create_ensemble(
                     self._experiment_id,
@@ -134,7 +129,7 @@ class MultipleDataAssimilation(BaseRunModel):
                     iteration=iteration + 1,
                     prior_ensemble=prior_context.sim_fs,
                 ),
-                prior_context.sim_fs.get_realization_mask_from_state(states),
+                prior_context.sim_fs.complete_realizations,
                 iteration=iteration + 1,
             )
             self.update(

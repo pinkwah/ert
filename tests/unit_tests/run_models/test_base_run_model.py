@@ -75,13 +75,13 @@ def test_run_ensemble_evaluator():
 @pytest.mark.parametrize(
     "run_path, number_of_iterations, start_iteration, active_mask, expected",
     [
-        ("out/realization-%d/iter-%d", 4, 2, [True, True, True, True], False),
-        ("out/realization-%d/iter-%d", 4, 1, [True, True, True, True], True),
-        ("out/realization-%d/iter-%d", 4, 1, [False, False, True, False], False),
-        ("out/realization-%d/iter-%d", 4, 0, [False, False, False, False], False),
+        ("out/realization-%d/iter-%d", 4, 2, range(4), False),
+        ("out/realization-%d/iter-%d", 4, 1, range(4), True),
+        ("out/realization-%d/iter-%d", 4, 1, [2], False),
         ("out/realization-%d/iter-%d", 4, 0, [], False),
-        ("out/realization-%d", 2, 1, [False, True, True], True),
-        ("out/realization-%d", 2, 0, [False, False, True], False),
+        ("out/realization-%d/iter-%d", 4, 0, [], False),
+        ("out/realization-%d", 2, 1, [1, 2], True),
+        ("out/realization-%d", 2, 0, [2], False),
     ],
 )
 def test_check_if_runpath_exists(

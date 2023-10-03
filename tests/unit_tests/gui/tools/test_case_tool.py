@@ -8,7 +8,6 @@ from ert.gui.ertnotifier import ErtNotifier
 from ert.gui.tools.manage_cases.case_init_configuration import (
     CaseInitializationConfigurationPanel,
 )
-from ert.realization_state import RealizationState
 
 
 @pytest.mark.usefixtures("copy_poly_case")
@@ -23,13 +22,11 @@ def test_case_tool_init_prior(qtbot, storage):
         name="prior",
     )
     notifier.set_current_case(ensemble)
-    assert ensemble.state_map == [RealizationState.UNDEFINED] * ert.getEnsembleSize()
     tool = CaseInitializationConfigurationPanel(ert, notifier)
     qtbot.mouseClick(
         tool.findChild(QPushButton, name="initialize_from_scratch_button"),
         Qt.LeftButton,
     )
-    assert ensemble.state_map == [RealizationState.INITIALIZED] * ert.getEnsembleSize()
 
 
 @pytest.mark.usefixtures("copy_poly_case")

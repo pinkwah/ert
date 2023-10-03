@@ -7,7 +7,9 @@ import time
 import uuid
 from contextlib import contextmanager
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, Iterator, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, Iterable, Iterator, List, Optional, Union
+
+from pydantic import BaseModel
 
 from ert.cli import MODULE_MODE
 from ert.config import HookRuntime
@@ -59,12 +61,17 @@ def captured_logs(level: int = logging.ERROR) -> Iterator[_LogAggregration]:
         root_logger.removeHandler(handler)
 
 
+class SimulationArguments(BaseModel):
+    realizations: Iterable[int]
+    prev_successful_realizations: int = 0
+
+
 # pylint: disable=too-many-instance-attributes,too-many-public-methods
 # pylint: disable=too-many-arguments
 class BaseRunModel:
     def __init__(
         self,
-        simulation_arguments: Dict[str, Any],
+        simulation_arguments: SimulationArguments,
         ert: EnKFMain,
         storage: StorageAccessor,
         queue_config: QueueConfig,
@@ -110,7 +117,7 @@ class BaseRunModel:
         return self._ert
 
     @property
-    def simulation_arguments(self) -> Dict[str, Any]:
+    def simulation_arguments(self) -> SimulationArguments:
         return self._simulation_arguments
 
     @property
@@ -131,13 +138,10 @@ class BaseRunModel:
 
     def restart(self) -> None:
         active_realizations = self._create_mask_from_failed_realizations()
-        self._simulation_arguments["active_realizations"] = active_realizations
-        self._simulation_arguments[
-            "prev_successful_realizations"
-        ] = self._simulation_arguments.get("prev_successful_realizations", 0)
-        self._simulation_arguments[
-            "prev_successful_realizations"
-        ] += self._count_successful_realizations()
+        self._simulation_arguments.realizations = active_realizations
+        self._simulation_arguments.prev_successful_realizations += (
+            self._count_successful_realizations()
+        )
 
     def has_failed_realizations(self) -> bool:
         return any(self._create_mask_from_failed_realizations())
@@ -204,15 +208,13 @@ class BaseRunModel:
         try:
             with captured_logs() as logs:
                 self._set_default_env_context()
-                self._initial_realizations_mask = self._simulation_arguments[
-                    "active_realizations"
-                ]
+                self._initial_realizations = self._simulation_arguments.realizations
                 run_context = self.run_experiment(
                     evaluator_server_config=evaluator_server_config,
                 )
-                self._completed_realizations_mask = run_context.mask
+                self._completed_realizations = run_context.indices
         except ErtRunError as e:
-            self._completed_realizations_mask = []
+            self._completed_realizations = []
             self._failed = True
             self._fail_message = str(e) + "\n" + "\n".join(sorted(logs.messages))
             self._simulationEnded()
@@ -312,7 +314,7 @@ class BaseRunModel:
                 "Too many realizations have failed! "
                 f"Number of successful realizations: {num_successful_realizations}, "
                 "number of active realizations: "
-                f"{self._simulation_arguments['active_realizations'].count(True)}, "
+                f"{len(self._simulation_arguments.realizations)}, "
                 "expected minimal number of successful realizations: "
                 f"{self.ert().analysisConfig().minimum_required_realizations}\n"
                 "You can add/adjust MIN_REALIZATIONS "

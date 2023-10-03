@@ -1,21 +1,19 @@
 from __future__ import annotations
 
-import json
 import logging
 from datetime import datetime
 from functools import lru_cache
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Iterable, List, Optional, Sequence, Tuple, Union, Set
 from uuid import UUID
 
 import numpy as np
 import xarray as xr
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from ert.callbacks import forward_model_ok
 from ert.load_status import LoadResult, LoadStatus
-from ert.realization_state import RealizationState
 
 if TYPE_CHECKING:
     import numpy.typing as npt
@@ -35,17 +33,7 @@ def _load_realization(
     realisation: int,
     run_args: List[RunArg],
 ) -> Tuple[LoadResult, int]:
-    sim_fs.update_realization_state(
-        realisation,
-        [RealizationState.UNDEFINED],
-        RealizationState.INITIALIZED,
-    )
     result = forward_model_ok(run_args[realisation])
-    sim_fs.state_map[realisation] = (
-        RealizationState.HAS_DATA
-        if result.status == LoadStatus.LOAD_SUCCESSFUL
-        else RealizationState.LOAD_FAILURE
-    )
     return result, realisation
 
 
@@ -57,6 +45,7 @@ class _Index(BaseModel):
     name: str
     prior_ensemble_id: Optional[UUID]
     started_at: datetime
+    failures: Set[int] = Field(default_factory=set)
 
 
 # pylint: disable=R0904
@@ -71,7 +60,10 @@ class LocalEnsembleReader:
         self._index = _Index.parse_file(path / "index.json")
         self._experiment_path = self._path / "experiment"
 
-        self._state_map = self._load_state_map()
+        self._initialized: Set[int] = set()
+        self._complete_realizations: Set[int] = set()
+        self._check_complete_realizations()
+        self._check_parameters_initialized()
 
     @property
     def mount_point(self) -> Path:
@@ -102,46 +94,30 @@ class LocalEnsembleReader:
         return self._index.iteration
 
     @property
-    def state_map(self) -> List[RealizationState]:
-        return self._state_map
+    def failures(self) -> Iterable[int]:
+        return self._index.failures
 
     @property
     def experiment(self) -> Union[LocalExperimentReader, LocalExperimentAccessor]:
         return self._storage.get_experiment(self.experiment_id)
+
+    @property
+    def initialized(self) -> Set[int]:
+        return self._initialized
+
+    @property
+    def uninitialized(self) -> Set[int]:
+        return set(range(self.ensemble_size)) - self.initialized
+
+    @property
+    def complete_realizations(self) -> Set[int]:
+        return self._complete_realizations
 
     def close(self) -> None:
         self.sync()
 
     def sync(self) -> None:
         pass
-
-    def get_realization_mask_from_state(
-        self, states: List[RealizationState]
-    ) -> npt.NDArray[np.bool_]:
-        return np.array([s in states for s in self._state_map], dtype=bool)
-
-    def _load_state_map(self) -> List[RealizationState]:
-        state_map_file = self._experiment_path / "state_map.json"
-        if state_map_file.exists():
-            with open(state_map_file, "r", encoding="utf-8") as f:
-                data = json.load(f)
-                return [RealizationState(v) for v in data["state_map"]]
-        else:
-            return [RealizationState.UNDEFINED for _ in range(self.ensemble_size)]
-
-    @property
-    def is_initalized(self) -> bool:
-        return RealizationState.INITIALIZED in self.state_map or self.has_data
-
-    @property
-    def has_data(self) -> bool:
-        return RealizationState.HAS_DATA in self.state_map
-
-    def realizations_initialized(self, realizations: List[int]) -> bool:
-        initialized_realizations = set(
-            self.realization_list(RealizationState.INITIALIZED)
-        )
-        return all(real in initialized_realizations for real in realizations)
 
     def get_summary_keyset(self) -> List[str]:
         realization_folders = list(self.mount_point.glob("realization-*"))
@@ -155,11 +131,42 @@ class LocalEnsembleReader:
         keys = sorted(response["name"].values)
         return keys
 
-    def realization_list(self, state: RealizationState) -> List[int]:
-        """
-        Will return list of realizations with state == the specified state.
-        """
-        return [i for i, s in enumerate(self._state_map) if s == state]
+    def _check_complete_realizations(
+        self, realizations: Optional[Iterable[int]] = None
+    ) -> None:
+        if realizations is None:
+            realizations = range(self.ensemble_size)
+
+        files = {
+            f"{resp.name}.nc"
+            for resp in self.experiment.response_configuration.values()
+        }
+        for iens in realizations:
+            if iens in self._complete_realizations:
+                continue
+
+            path = self._path / f"realization-{iens}"
+            if all(map(lambda f: (path / f).exists(), files)):
+                self._complete_realizations.add(iens)
+
+    def _check_parameters_initialized(
+        self, realizations: Optional[Sequence[int]] = None
+    ) -> None:
+        if realizations is None:
+            realizations = range(self.ensemble_size)
+
+        files = {
+            f"{param.name}.nc"
+            for param in self.experiment.parameter_configuration.values()
+            if not param.forward_init
+        }
+        for iens in realizations:
+            if iens in self._initialized:
+                continue
+
+            path = self._path / f"realization-{iens}"
+            if all(map(lambda f: (path / f).exists(), files)):
+                self._initialized.add(iens)
 
     def _load_single_dataset(
         self,
@@ -223,7 +230,7 @@ class LocalEnsembleAccessor(LocalEnsembleReader):
         self,
         storage: LocalStorageAccessor,
         path: Path,
-    ):
+    ) -> None:
         super().__init__(storage, path)
         self._storage: LocalStorageAccessor = storage
 
@@ -257,23 +264,8 @@ class LocalEnsembleAccessor(LocalEnsembleReader):
 
         return cls(storage, path)
 
-    def _save_state_map(self) -> None:
-        state_map_file = self._experiment_path / "state_map.json"
-        with open(state_map_file, "w", encoding="utf-8") as f:
-            data = {"state_map": [v.value for v in self._state_map]}
-            f.write(json.dumps(data))
-
-    def update_realization_state(
-        self,
-        realization: int,
-        old_states: List[RealizationState],
-        new_state: RealizationState,
-    ) -> None:
-        if self._state_map[realization] in old_states:
-            self._state_map[realization] = new_state
-
     def sync(self) -> None:
-        self._save_state_map()
+        pass
 
     def load_from_run_path(
         self,
@@ -299,9 +291,8 @@ class LocalEnsembleAccessor(LocalEnsembleReader):
 
             if status == LoadStatus.LOAD_SUCCESSFUL:
                 loaded += 1
-                self.state_map[iens] = RealizationState.HAS_DATA
             else:
-                logger.error(f"Realization: {iens}, load failure: {message}")
+                print(f"Realization: {iens}, load failure: {message}")
 
         return loaded
 
@@ -328,14 +319,6 @@ class LocalEnsembleAccessor(LocalEnsembleReader):
         path = self.mount_point / f"realization-{realization}" / f"{group}.nc"
         path.parent.mkdir(exist_ok=True)
         dataset.expand_dims(realizations=[realization]).to_netcdf(path, engine="scipy")
-        self.update_realization_state(
-            realization,
-            [
-                RealizationState.UNDEFINED,
-                RealizationState.LOAD_FAILURE,
-            ],
-            RealizationState.INITIALIZED,
-        )
 
     def save_response(self, group: str, data: xr.Dataset, realization: int) -> None:
         data = data.expand_dims({"realization": [realization]})
@@ -343,3 +326,7 @@ class LocalEnsembleAccessor(LocalEnsembleReader):
         Path.mkdir(output_path, parents=True, exist_ok=True)
 
         data.to_netcdf(output_path / f"{group}.nc", engine="scipy")
+
+    def set_failures(self, failures: Set[int]) -> None:
+        self._index.failures |= failures
+        self.sync()

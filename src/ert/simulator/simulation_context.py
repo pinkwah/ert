@@ -9,7 +9,6 @@ import numpy as np
 
 from ert.config import HookRuntime
 from ert.job_queue import Driver, JobQueue, JobQueueManager, RunStatus
-from ert.realization_state import RealizationState
 from ert.run_context import RunContext
 from ert.runpaths import Runpaths
 
@@ -27,16 +26,6 @@ if TYPE_CHECKING:
 def _run_forward_model(
     ert: "EnKFMain", job_queue: "JobQueue", run_context: "RunContext"
 ) -> int:
-    # run simplestep
-    for realization_nr in run_context.active_realizations:
-        run_context.sim_fs.update_realization_state(
-            realization_nr,
-            [
-                RealizationState.UNDEFINED,
-                RealizationState.LOAD_FAILURE,
-            ],
-            RealizationState.INITIALIZED,
-        )
     run_context.sim_fs.sync()
 
     # start queue
@@ -123,10 +112,6 @@ class SimulationContext:
             iteration=itr,
         )
 
-        for realization_nr in self._run_context.active_realizations:
-            self._run_context.sim_fs.state_map[
-                realization_nr
-            ] = RealizationState.INITIALIZED
         self._ert.createRunPath(self._run_context)
         self._ert.runWorkflows(
             HookRuntime.PRE_SIMULATION, None, self._run_context.sim_fs

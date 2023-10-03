@@ -7,7 +7,6 @@ from uuid import UUID
 from ert.analysis import ErtAnalysisError
 from ert.config import HookRuntime
 from ert.ensemble_evaluator import EvaluatorServerConfig
-from ert.realization_state import RealizationState
 from ert.run_context import RunContext
 from ert.storage import StorageAccessor
 
@@ -48,7 +47,7 @@ class EnsembleSmoother(BaseRunModel):
         self, evaluator_server_config: EvaluatorServerConfig
     ) -> RunContext:
         self._checkMinimumActiveRealizations(
-            self._simulation_arguments["active_realizations"].count(True)
+            len(self._simulation_arguments["active_realizations"])
         )
 
         log_msg = "Running ES"
@@ -79,10 +78,6 @@ class EnsembleSmoother(BaseRunModel):
         self.ert().runWorkflows(
             HookRuntime.PRE_UPDATE, self._storage, prior_context.sim_fs
         )
-        states = [
-            RealizationState.HAS_DATA,
-            RealizationState.INITIALIZED,
-        ]
         target_case_format = self._simulation_arguments["target_case"]
         posterior_context = self.ert().ensemble_context(
             self._storage.create_ensemble(
@@ -92,7 +87,7 @@ class EnsembleSmoother(BaseRunModel):
                 name=target_case_format,
                 prior_ensemble=prior,
             ),
-            prior_context.sim_fs.get_realization_mask_from_state(states),
+            prior_context.sim_fs.complete_realizations,
             iteration=1,
         )
 

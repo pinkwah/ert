@@ -33,7 +33,7 @@ def create_runpath(
     ensemble: Optional[EnsembleAccessor] = None,
     iteration=0,
 ):
-    active_mask = [True] if active_mask is None else active_mask
+    active_mask = [0] if active_mask is None else active_mask
     res_config = ErtConfig.from_file(config)
     ert = EnKFMain(res_config)
 
@@ -58,7 +58,7 @@ def create_runpath(
 
 def load_from_forward_model(ert, ensemble, iteration=0):
     facade = LibresFacade(ert)
-    realizations = [True] * facade.get_ensemble_size()
+    realizations = range(facade.get_ensemble_size())
     return facade.load_from_forward_model(ensemble, realizations, iteration=iteration)
 
 
@@ -289,7 +289,7 @@ def test_min_max(storage, tmpdir, min_: int, max_: int, field_config: str):
             "MY_PARAM", grid, "my_param_0.grdecl", "grdecl", (10, 10, 1), buffer
         )
 
-        create_runpath(storage, "config.ert", [True])
+        create_runpath(storage, "config.ert", [0])
 
         my_prop = xtgeo.gridproperty_from_file(
             pfile="simulations/realization-0/iter-0/my_param.grdecl",
@@ -341,7 +341,7 @@ def test_transformation(storage, tmpdir):
             np.full((100), math.exp(1.5), dtype=float),
         )
 
-        _, fs = create_runpath(storage, "config.ert", [True, True])
+        _, fs = create_runpath(storage, "config.ert", [0, 1])
 
         # stored internally as 2.5, 1.5
         loaded_a = fs.load_parameters("PARAM_A", [0, 1])
@@ -927,7 +927,7 @@ def test_config_node_meta_information(storage, tmpdir):
             "MY_PARAM", grid, "my_param_0.grdecl", "grdecl", (10, 10, 1), buffer
         )
 
-        ert, _ = create_runpath(storage, "config.ert", [True])
+        ert, _ = create_runpath(storage, "config.ert", [0])
         ensemble_config = ert.ensembleConfig()
 
         # invalid object

@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING, Any, Dict
 from uuid import UUID
 
 from ert.ensemble_evaluator import EvaluatorServerConfig
-from ert.realization_state import RealizationState
 from ert.run_context import RunContext
 from ert.storage import EnsembleAccessor, StorageAccessor
 
@@ -53,21 +52,10 @@ class EnsembleExperiment(BaseRunModel):
             iteration=self._simulation_arguments.get("iter_num", 0),
         )
 
-        if not prior_context.sim_fs.realizations_initialized(
-            prior_context.active_realizations
+        if uninit := (
+            prior_context.sim_fs.uninitialized & set(prior_context.active_realizations)
         ):
-            self.ert().sample_prior(
-                prior_context.sim_fs,
-                prior_context.active_realizations,
-            )
-        else:
-            state_map = prior_context.sim_fs.state_map
-            for realization_nr in prior_context.active_realizations:
-                if state_map[realization_nr] in [
-                    RealizationState.UNDEFINED,
-                    RealizationState.LOAD_FAILURE,
-                ]:
-                    state_map[realization_nr] = RealizationState.INITIALIZED
+            self.ert().sample_prior(prior_context.sim_fs, uninit)
 
         self._evaluate_and_postprocess(prior_context, evaluator_server_config)
 

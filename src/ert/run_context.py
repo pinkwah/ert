@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Iterator, List
+from typing import TYPE_CHECKING, Iterable, Iterator, List, Sequence
 
 import numpy as np
 
@@ -19,24 +19,21 @@ if TYPE_CHECKING:
 class RunContext:
     sim_fs: EnsembleAccessor
     runpaths: Runpaths
-    initial_mask: npt.NDArray[np.bool_] = field(
-        default_factory=lambda: np.array([], dtype=bool)
-    )
+    initial_mask: Iterable[int] = field(default_factory=set)
     iteration: int = 0
 
     def __post_init__(self) -> None:
         self.run_id = uuid.uuid4()
         self.run_args = []
         paths = self.runpaths.get_paths(
-            list(range(len(self.initial_mask))), self.iteration
+            range(self.sim_fs.ensemble_size), self.iteration
         )
         job_names = self.runpaths.get_jobnames(
-            list(range(len(self.initial_mask))), self.iteration
+            range(self.sim_fs.ensemble_size), self.iteration
         )
 
-        for iens, (run_path, job_name, active) in enumerate(
-            zip(paths, job_names, self.initial_mask)
-        ):
+        assert not any(map(lambda x: isinstance(x, bool), self.initial_mask))
+        for iens, (run_path, job_name) in enumerate(zip(paths, job_names)):
             self.run_args.append(
                 RunArg(
                     str(self.run_id),
@@ -45,13 +42,17 @@ class RunContext:
                     self.iteration,
                     run_path,
                     job_name,
-                    active,
+                    iens in self.initial_mask,
                 )
             )
 
     @property
     def mask(self) -> List[bool]:
         return [real.active for real in self]
+
+    @property
+    def indices(self) -> Iterable[int]:
+        return [i for i, real in enumerate(self) if real.active]
 
     def is_active(self, index: int) -> bool:
         return self[index].active
@@ -61,7 +62,7 @@ class RunContext:
         return [i for i, real in enumerate(self) if real.active]
 
     def __len__(self) -> int:
-        return len(self.initial_mask)
+        return self.sim_fs.ensemble_size
 
     def __getitem__(self, item: int) -> "RunArg":
         return self.run_args[item]

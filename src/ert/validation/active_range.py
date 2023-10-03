@@ -1,4 +1,4 @@
-from typing import List, Optional, Tuple
+from typing import Iterable, List, Optional, Tuple
 
 from .rangestring import mask_to_rangestring, rangestring_to_mask
 
@@ -29,6 +29,10 @@ class ActiveRange:
     @property
     def mask(self) -> List[bool]:
         return list(self._mask)
+
+    @property
+    def indices(self) -> Iterable[int]:
+        return [i for i, b in enumerate(self.mask) if b]
 
     @property
     def rangestring(self) -> str:

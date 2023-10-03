@@ -9,11 +9,10 @@ from iterative_ensemble_smoother import SIES
 from ert.analysis import ErtAnalysisError, ESUpdate
 from ert.config import HookRuntime
 from ert.ensemble_evaluator import EvaluatorServerConfig
-from ert.realization_state import RealizationState
 from ert.run_context import RunContext
 from ert.storage import EnsembleAccessor, StorageAccessor
 
-from .base_run_model import BaseRunModel, ErtRunError
+from .base_run_model import BaseRunModel, ErtRunError, SimulationArguments
 
 if TYPE_CHECKING:
     from ert.config import QueueConfig
@@ -26,7 +25,7 @@ logger = logging.getLogger(__file__)
 class IteratedEnsembleSmoother(BaseRunModel):
     def __init__(
         self,
-        simulation_arguments: Dict[str, Any],
+        simulation_arguments: SimulationArguments,
         ert: EnKFMain,
         storage: StorageAccessor,
         queue_config: QueueConfig,
@@ -123,10 +122,6 @@ class IteratedEnsembleSmoother(BaseRunModel):
             HookRuntime.PRE_FIRST_UPDATE, self._storage, prior_context.sim_fs
         )
         for current_iter in range(1, iteration_count + 1):
-            states = [
-                RealizationState.HAS_DATA,
-                RealizationState.INITIALIZED,
-            ]
             posterior = self._storage.create_ensemble(
                 self._experiment_id,
                 name=target_case_format % current_iter,  # noqa
@@ -136,7 +131,7 @@ class IteratedEnsembleSmoother(BaseRunModel):
             )
             posterior_context = self.ert().ensemble_context(
                 posterior,
-                prior_context.sim_fs.get_realization_mask_from_state(states),
+                prior_context.sim_fs.complete_realizations,
                 iteration=current_iter,
             )
             update_success = False

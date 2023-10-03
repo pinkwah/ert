@@ -12,7 +12,6 @@ from flaky import flaky
 from ert.analysis import ESUpdate
 from ert.config import EnkfObservationImplementationType, ErtConfig, SummaryConfig
 from ert.enkf_main import EnKFMain
-from ert.realization_state import RealizationState
 from ert.storage import open_storage
 from tests.performance_tests.performance_utils import make_poly_example
 
@@ -91,7 +90,6 @@ def fill_storage_with_data(poly_template: Path, ert: EnKFMain) -> None:
                 make_summary_data(summary_obs_keys, ens_config.refcase.numpy_dates),
                 real,
             )
-            source.state_map[real] = RealizationState.HAS_DATA
 
         ert.sample_prior(source, realizations, ens_config.parameters)
 

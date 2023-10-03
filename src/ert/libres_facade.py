@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Callable, Dict, Iterable, List, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -22,7 +22,6 @@ from ert.config import (
 )
 from ert.data import MeasuredData
 from ert.data._measured_data import ResponseError
-from ert.realization_state import RealizationState
 from ert.shared.version import __version__
 from ert.storage import EnsembleReader
 
@@ -158,9 +157,6 @@ class LibresFacade:  # pylint: disable=too-many-public-methods
     def get_ensemble_size(self) -> int:
         return self._enkf_main.getEnsembleSize()
 
-    def get_active_realizations(self, ensemble: EnsembleReader) -> List[int]:
-        return ensemble.realization_list(RealizationState.HAS_DATA)
-
     def get_queue_config(self) -> "QueueConfig":
         return self._enkf_main.get_queue_config()
 
@@ -186,7 +182,7 @@ class LibresFacade:  # pylint: disable=too-many-public-methods
     def load_from_forward_model(
         self,
         ensemble: EnsembleAccessor,
-        realisations: npt.NDArray[np.bool_],
+        realisations: Iterable[int],
         iteration: int,
     ) -> int:
         return self._enkf_main.loadFromForwardModel(realisations, iteration, ensemble)
@@ -215,11 +211,11 @@ class LibresFacade:  # pylint: disable=too-many-public-methods
         report_step: int,
         realization_index: Optional[int] = None,
     ) -> DataFrame:
-        realizations = ensemble.realization_list(RealizationState.HAS_DATA)
+        realizations = ensemble.complete_realizations
         if realization_index is not None:
             if realization_index not in realizations:
                 raise IndexError(f"No such realization {realization_index}")
-            realizations = [realization_index]
+            realizations = {realization_index}
         try:
             vals = ensemble.load_response(key, tuple(realizations)).sel(
                 report_step=report_step, drop=True
@@ -230,7 +226,7 @@ class LibresFacade:  # pylint: disable=too-many-public-methods
         return pd.DataFrame(
             data=vals["values"].values.reshape(len(vals.realization), -1).T,
             index=index,
-            columns=realizations,
+            columns=list(realizations),
         )
 
     def all_data_type_keys(self) -> List[str]:
@@ -287,16 +283,10 @@ class LibresFacade:  # pylint: disable=too-many-public-methods
         Note:
             Any provided keys that are not gen_kw will be ignored.
         """
-        ens_mask = ensemble.get_realization_mask_from_state(
-            [
-                RealizationState.INITIALIZED,
-                RealizationState.HAS_DATA,
-            ]
-        )
         realizations = (
             np.array([realization_index])
             if realization_index is not None
-            else np.flatnonzero(ens_mask)
+            else np.array(ensemble.complete_realizations)
         )
 
         dataframes = []
@@ -353,11 +343,11 @@ class LibresFacade:  # pylint: disable=too-many-public-methods
         keys: Optional[List[str]] = None,
         realization_index: Optional[int] = None,
     ) -> DataFrame:
-        realizations = self.get_active_realizations(ensemble)
+        realizations = ensemble.complete_realizations
         if realization_index is not None:
             if realization_index not in realizations:
                 raise IndexError(f"No such realization {realization_index}")
-            realizations = [realization_index]
+            realizations = {realization_index}
 
         summary_keys = ensemble.get_summary_keyset()
 

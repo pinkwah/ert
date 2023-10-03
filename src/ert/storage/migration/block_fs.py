@@ -7,7 +7,7 @@ import warnings
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, List, Sequence, Tuple
+from typing import TYPE_CHECKING, Dict, List, Tuple
 
 import numpy as np
 import xarray as xr
@@ -24,7 +24,6 @@ from ert.config import (
     SurfaceConfig,
     field_transform,
 )
-from ert.realization_state import RealizationState
 from ert.storage import EnsembleAccessor, StorageAccessor
 from ert.storage.local_storage import LocalStorageAccessor, local_storage_get_ert_config
 from ert.storage.migration._block_fs_native import (  # pylint: disable=E0401
@@ -117,8 +116,6 @@ def migrate_case(storage: StorageAccessor, path: Path) -> None:
         iteration=iteration,
     )
 
-    _copy_state_map(ensemble, state_map)
-
     # Copy parameter data
     for data_file in parameter_files:
         _migrate_field(ensemble, data_file, ens_config)
@@ -163,28 +160,6 @@ def _load_timestamps(path: Path) -> npt.NDArray[np.datetime64]:
         size = struct.unpack("I", f.read(4))[0]
         f.read(sizeof_time_t)  # time_t default_value; (unused)
         return np.frombuffer(f.read(size * sizeof_time_t), dtype="datetime64[s]")
-
-
-def _load_states(path: Path) -> List[RealizationState]:
-    if not path.exists():
-        return []
-
-    sizeof_int = 4
-
-    with path.open("rb") as f:
-        size = struct.unpack("I", f.read(4))[0]
-        f.read(sizeof_int)  # int default_value; (unused)
-        return [
-            RealizationState(x)
-            for x in np.frombuffer(f.read(size * sizeof_int), dtype=np.int32)
-        ]
-
-
-def _copy_state_map(
-    ensemble: EnsembleAccessor, states: Sequence[RealizationState]
-) -> None:
-    for index, state in enumerate(states):
-        ensemble.state_map[index] = state
 
 
 def _migrate_surface_info(

@@ -1,12 +1,12 @@
 from pathlib import Path
-from typing import Callable, List
+from typing import Callable, Iterable, List
 
 
 class Runpaths:
     """The Runpaths are the ensemble workspace directories.
 
     Generally there is one runpath for each realization and iteration, although
-    depending on the given format string for the paths they may coincide. There
+    depending on the given format string for the paths they may coi, Iterablencide. There
     is one job name for each of the runpaths.
 
     :param jobname_format: The format of the job name, e.g., "job_<IENS>"
@@ -38,13 +38,13 @@ class Runpaths:
         self._runpath_format = str(Path(runpath_format).resolve())
         self._substitute = substitute
 
-    def get_paths(self, realizations: List[int], iteration: int) -> List[str]:
+    def get_paths(self, realizations: Iterable[int], iteration: int) -> List[str]:
         return [
             self._substitute(self._runpath_format, realization, iteration)
             for realization in realizations
         ]
 
-    def get_jobnames(self, realizations: List[int], iteration: int) -> List[str]:
+    def get_jobnames(self, realizations: Iterable[int], iteration: int) -> List[str]:
         return [
             self._substitute(self._jobname_format, realization, iteration)
             for realization in realizations

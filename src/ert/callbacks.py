@@ -9,7 +9,6 @@ from ert.config import ParameterConfig, ResponseConfig, SummaryConfig
 from ert.run_arg import RunArg
 
 from .load_status import LoadResult, LoadStatus
-from .realization_state import RealizationState
 
 logger = logging.getLogger(__name__)
 
@@ -104,10 +103,6 @@ def forward_model_ok(
     if response_result.status != LoadStatus.LOAD_SUCCESSFUL:
         final_result = response_result
 
-    run_arg.ensemble_storage.state_map[run_arg.iens] = (
-        RealizationState.HAS_DATA
-        if final_result.status == LoadStatus.LOAD_SUCCESSFUL
-        else RealizationState.LOAD_FAILURE
-    )
+    run_arg.ensemble_storage.set_failures({run_arg.iens})
 
     return final_result

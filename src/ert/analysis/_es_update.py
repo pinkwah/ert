@@ -27,7 +27,6 @@ from iterative_ensemble_smoother.experimental import (
 )
 
 from ert.config import Field, GenKwConfig, SurfaceConfig
-from ert.realization_state import RealizationState
 
 from .row_scaling import RowScaling
 from .update import Parameter, RowScalingParameter
@@ -641,8 +640,11 @@ class ESUpdate:
 
         alpha = analysis_config.enkf_alpha
         std_cutoff = analysis_config.std_cutoff
-        ens_mask = prior_storage.get_realization_mask_from_state(
-            [RealizationState.HAS_DATA]
+        ens_mask = np.array(
+            [
+                i in prior_storage.complete_realizations
+                for i in range(prior_storage.ensemble_size)
+            ]
         )
         _assert_has_enough_realizations(ens_mask, analysis_config)
 
@@ -697,8 +699,11 @@ class ESUpdate:
 
         alpha = analysis_config.enkf_alpha
         std_cutoff = analysis_config.std_cutoff
-        ens_mask = prior_storage.get_realization_mask_from_state(
-            [RealizationState.HAS_DATA]
+        ens_mask = np.array(
+            [
+                i in prior_storage.complete_realizations
+                for i in range(prior_storage.ensemble_size)
+            ]
         )
 
         _assert_has_enough_realizations(ens_mask, analysis_config)

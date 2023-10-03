@@ -18,7 +18,6 @@ from ert._clib.queue import (  # pylint: disable=import-error
 from ert.callbacks import forward_model_ok
 from ert.load_status import LoadStatus
 
-from ..realization_state import RealizationState
 from . import ResPrototype
 from .job_status import JobStatus
 from .submit_status import SubmitStatus
@@ -185,9 +184,7 @@ class JobQueueNode(BaseCClass):  # type: ignore
             self.callback_timeout(self.run_arg.iens)
 
     def run_exit_callback(self) -> None:
-        self.run_arg.ensemble_storage.state_map[
-            self.run_arg.iens
-        ] = RealizationState.LOAD_FAILURE
+        self.run_arg.ensemble_storage.set_failures({self.run_arg.iens})
 
     def is_running(self, given_status: Optional[JobStatus] = None) -> bool:
         status = given_status or self.queue_status

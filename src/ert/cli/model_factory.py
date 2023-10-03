@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 import warnings
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, Iterable, List
 from uuid import UUID
 
 from ert.cli import (
@@ -63,7 +63,7 @@ def _setup_single_test_run(
     ert: EnKFMain, storage: StorageAccessor, args: Namespace, experiment_id: UUID
 ) -> SingleTestRun:
     simulations_argument = {
-        "active_realizations": [True],
+        "active_realizations": [0],
         "current_case": args.current_case,
         "simulation_mode": "Single test run",
     }
@@ -172,10 +172,10 @@ def _setup_iterative_ensemble_smoother(
     return model
 
 
-def _realizations(args: Namespace, ensemble_size: int) -> List[bool]:
+def _realizations(args: Namespace, ensemble_size: int) -> Iterable[int]:
     if args.realizations is None:
-        return [True] * ensemble_size
-    return ActiveRange(rangestring=args.realizations, length=ensemble_size).mask
+        return list(range(ensemble_size))
+    return ActiveRange(rangestring=args.realizations, length=ensemble_size).indices
 
 
 def _target_case_name(ert: EnKFMain, args: Namespace, format_mode: bool = False) -> str:

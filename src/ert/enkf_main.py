@@ -30,7 +30,6 @@ from .config import (
     ParameterConfig,
 )
 from .job_queue import WorkflowRunner
-from .realization_state import RealizationState
 from .run_context import RunContext
 from .runpaths import Runpaths
 from .substitution_list import SubstitutionList
@@ -215,11 +214,11 @@ class EnKFMain:  # pylint: disable=too-many-public-methods
         return self.update_configuration
 
     def loadFromForwardModel(
-        self, realization: npt.NDArray[np.bool_], iteration: int, fs: EnsembleAccessor
+        self, realizations: Iterable[int], iteration: int, fs: EnsembleAccessor
     ) -> int:
         """Returns the number of loaded realizations"""
         t = time.perf_counter()
-        run_context = self.ensemble_context(fs, realization, iteration)
+        run_context = self.ensemble_context(fs, realizations, iteration)
         nr_loaded = fs.load_from_run_path(
             self.getEnsembleSize(),
             run_context.run_args,
@@ -234,7 +233,7 @@ class EnKFMain:  # pylint: disable=too-many-public-methods
     def ensemble_context(
         self,
         case: EnsembleAccessor,
-        active_realizations: npt.NDArray[np.bool_],
+        realizations: Iterable[int],
         iteration: int,
     ) -> RunContext:
         """This loads an existing case from storage
@@ -244,7 +243,7 @@ class EnKFMain:  # pylint: disable=too-many-public-methods
         return RunContext(
             sim_fs=case,
             runpaths=self._runpaths,
-            initial_mask=active_realizations,
+            initial_mask=realizations,
             iteration=iteration,
         )
 
@@ -292,7 +291,7 @@ class EnKFMain:  # pylint: disable=too-many-public-methods
     def sample_prior(
         self,
         ensemble: EnsembleAccessor,
-        active_realizations: List[int],
+        active_realizations: Iterable[int],
         parameters: Optional[List[str]] = None,
     ) -> None:
         """This function is responsible for getting the prior into storage,
@@ -316,15 +315,6 @@ class EnKFMain:  # pylint: disable=too-many-public-methods
                     ensemble_size=ensemble.ensemble_size,
                 )
                 ensemble.save_parameters(parameter, realization_nr, ds)
-        for realization_nr in active_realizations:
-            ensemble.update_realization_state(
-                realization_nr,
-                [
-                    RealizationState.UNDEFINED,
-                    RealizationState.LOAD_FAILURE,
-                ],
-                RealizationState.INITIALIZED,
-            )
 
         ensemble.sync()
         logger.debug(f"sample_prior() time_used {(time.perf_counter() - t):.4f}s")

@@ -2,7 +2,6 @@ from typing import Optional
 
 from ert import ErtScript
 from ert.exceptions import StorageError
-from ert.realization_state import RealizationState
 
 
 class ExportMisfitDataJob(ErtScript):
@@ -26,7 +25,7 @@ class ExportMisfitDataJob(ErtScript):
         if self.ensemble is None:
             raise StorageError("No responses loaded")
 
-        realizations = self.ensemble.realization_list(RealizationState.HAS_DATA)
+        realizations = self.ensemble.complete_realizations
 
         if not realizations:
             raise StorageError("No responses loaded")
