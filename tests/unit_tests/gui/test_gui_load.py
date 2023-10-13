@@ -5,8 +5,8 @@ from pathlib import Path
 from unittest.mock import MagicMock, Mock, PropertyMock, patch
 
 import pytest
-from qtpy.QtCore import Qt, QTimer
-from qtpy.QtWidgets import QComboBox, QMessageBox, QToolButton, QWidget
+from qtpy.QtCore import Qt
+from qtpy.QtWidgets import QComboBox, QToolButton, QWidget
 
 import ert.gui
 from ert.config import ErtConfig
@@ -241,7 +241,7 @@ def test_that_ert_starts_when_there_are_no_problems(qapp):
 
 
 @pytest.mark.usefixtures("use_tmpdir")
-def test_that_run_dialog_can_be_closed_after_used_to_open_plots(qtbot, storage):
+def test_that_run_dialog_can_be_closed_after_used_to_open_plots(qtbot, qmsgbox, storage):
     """
     This is a regression test for a bug where the plot window opened from run dialog
     would have run dialog as parent. Because of that it would be destroyed when
@@ -271,11 +271,6 @@ def test_that_run_dialog_can_be_closed_after_used_to_open_plots(qtbot, storage):
         start_simulation = gui.findChild(QToolButton, name="start_simulation")
         assert isinstance(start_simulation, QToolButton)
 
-        def handle_dialog():
-            message_box = gui.findChild(QMessageBox)
-            qtbot.mouseClick(message_box.button(QMessageBox.Yes), Qt.LeftButton)
-
-        QTimer.singleShot(500, handle_dialog)
         qtbot.mouseClick(start_simulation, Qt.LeftButton)
 
         qtbot.waitUntil(lambda: gui.findChild(RunDialog) is not None)
