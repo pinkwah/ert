@@ -1,10 +1,12 @@
 import functools
 import webbrowser
-from typing import Optional
+from typing import Dict, Optional, Set, Type, TypeVar, cast
 
 from qtpy.QtCore import QSettings, Qt, Signal
+from qtpy.QtGui import QIcon
 from qtpy.QtWidgets import (
     QAction,
+    QDialog,
     QDockWidget,
     QMainWindow,
     QToolButton,
@@ -14,7 +16,11 @@ from qtpy.QtWidgets import (
 
 from ert.gui.about_dialog import AboutDialog
 from ert.gui.ertnotifier import ErtNotifier
+from ert.gui.ertwidgets import resourceIcon
 from ert.shared.plugins import ErtPluginManager
+
+
+T = TypeVar("T", bound=QDialog)
 
 
 class ErtMainWindow(QMainWindow):
@@ -31,7 +37,7 @@ class ErtMainWindow(QMainWindow):
         self.setWindowTitle(f"ERT - {config_file}")
 
         self.plugin_manager = plugin_manager
-        self.__main_widget = None
+        self._open_tools: Dict[Type[QDialog], QDialog] = {}
 
         self.central_widget = QWidget()
         self.central_layout = QVBoxLayout()
@@ -79,6 +85,20 @@ class ErtMainWindow(QMainWindow):
         if tool.isPopupMenu():
             tool_button = self.toolbar.widgetForAction(tool.getAction())
             tool_button.setPopupMode(QToolButton.InstantPopup)
+
+    def add_tool_button(self, dialog_class: Type[QDialog], name: str, *, icon: Optional[str] = None) -> None:
+        qt_icon = resourceIcon(icon) if icon is not None else QIcon()
+
+        action = QAction(qt_icon, name, self)
+        action.setIconText(name)
+        action.triggered.connect(lambda: self.open_tool(dialog_class))
+        self.toolbar.addAction(action)
+
+    def open_tool(self, dialog_type: Type[T]) -> T:
+        if (tool := self._open_tools.get(dialog_type)) is None:
+            tool = self._open_tools[dialog_type] = dialog_type()
+        tool.open()
+        return cast(T, tool)
 
     def __createMenu(self):
         self.__view_menu = self.menuBar().addMenu("&View")

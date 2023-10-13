@@ -16,6 +16,7 @@ from typing import (
     Sequence,
     Union,
 )
+from typing_extensions import Self
 
 import numpy as np
 from numpy.random import SeedSequence
@@ -172,6 +173,14 @@ class EnKFMain:  # pylint: disable=too-many-public-methods
 
         self._global_seed = _seed_sequence(self.ert_config.random_seed)
         self._shared_rng = np.random.default_rng(self._global_seed)
+
+    @classmethod
+    def instance(cls) -> Self:
+        return getattr(cls, "_instance")
+
+    @classmethod
+    def set_instance(cls, value: Self) -> None:
+        setattr(cls, "_instance", value)
 
     @property
     def update_configuration(self) -> UpdateConfiguration:

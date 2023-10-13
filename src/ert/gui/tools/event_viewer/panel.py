@@ -1,10 +1,15 @@
+from __future__ import annotations
+
 import logging
 from contextlib import contextmanager
-from typing import Iterator
+from typing import Iterator, Optional
 
 from qtpy import QtCore
 from qtpy.QtCore import QObject
-from qtpy.QtWidgets import QPlainTextEdit, QVBoxLayout
+from qtpy.QtWidgets import QDialog, QPlainTextEdit, QVBoxLayout, QWidget
+
+
+_LOG_HANDLER: Optional[GUILogHandler] = None
 
 
 class GUILogHandler(logging.Handler, QObject):
@@ -27,30 +32,22 @@ class GUILogHandler(logging.Handler, QObject):
         self.append_log_statement.emit(msg)
 
 
-class EventViewerPanel(QPlainTextEdit):
-    def __init__(self, log_handler: GUILogHandler):
-        self.log_handler = log_handler
-        QPlainTextEdit.__init__(self)
+class EventViewerDialog(QDialog):
+    def __init__(self, log_handler: Optional[GUILogHandler] = None, parent: Optional[QWidget] = None):
+        super().__init__(parent)
 
-        self.setMinimumWidth(500)
-        self.setMinimumHeight(200)
-        self._dynamic = False
+        if log_handler is None:
+            log_handler = _LOG_HANDLER
+            assert log_handler is not None
 
+        self.setMinimumSize(500, 200)
         self.setWindowTitle("Event viewer")
-        self.activateWindow()
 
-        layout = QVBoxLayout()
-        self.text_box = QPlainTextEdit()
-        self.text_box.setReadOnly(True)
-        self.text_box.setMaximumBlockCount(1000)
-        layout.addWidget(self.text_box)
+        text_box = QPlainTextEdit(self)
+        text_box.setReadOnly(True)
+        text_box.setMaximumBlockCount(1000)
 
-        self.setLayout(layout)
-        log_handler.append_log_statement.connect(self.val_changed)
-
-    @QtCore.Slot(str)
-    def val_changed(self, value):
-        self.text_box.appendPlainText(value)
+        log_handler.append_log_statement.connect(text_box.appendPlainText)
 
 
 @contextmanager
@@ -63,6 +60,9 @@ def add_gui_log_handler() -> Iterator[GUILogHandler]:
 
     handler = GUILogHandler()
     logger.addHandler(handler)
+
+    global _LOG_HANDLER
+    _LOG_HANDLER = handler
 
     yield handler
 

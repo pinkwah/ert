@@ -1,5 +1,7 @@
+from typing import Optional
 from qtpy.QtCore import Qt
 from qtpy.QtWidgets import (
+    QDialog,
     QHBoxLayout,
     QLabel,
     QPushButton,
@@ -8,6 +10,8 @@ from qtpy.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+from ert.enkf_main import EnKFMain
+from ert.gui.ertnotifier import ErtNotifier
 
 from ert.gui.ertwidgets import showWaitCursorWhileWaiting
 from ert.gui.ertwidgets.caselist import CaseList
@@ -52,19 +56,28 @@ def createRow(*widgets):
     return row
 
 
-class CaseInitializationConfigurationPanel(QTabWidget):
+class CaseInitializationConfigurationPanel(QDialog):
     @showWaitCursorWhileWaiting
-    def __init__(self, ert, notifier):
+    def __init__(
+        self, ert: Optional[EnKFMain] = None, notifier: Optional[ErtNotifier] = None
+    ) -> None:
+        super().__init__()
+        if ert is None:
+            ert = EnKFMain.instance()
+        if notifier is None:
+            notifier = ErtNotifier.instance()
+
         self.ert = ert
         self.notifier = notifier
-        QTabWidget.__init__(self)
+
+        self._tab_widget = QTabWidget(self)
         self.setWindowTitle("Case management")
         self.setMinimumWidth(600)
 
         self.addCreateNewCaseTab()
         self.addInitializeFromScratchTab()
         self.addShowCaseInfo()
-        self.currentChanged.connect(self.on_tab_changed)
+        self._tab_widget.currentChanged.connect(self.on_tab_changed)
 
     @property
     def storage(self):
@@ -80,7 +93,7 @@ class CaseInitializationConfigurationPanel(QTabWidget):
 
         panel.setLayout(layout)
 
-        self.addTab(panel, "Create new case")
+        self._tab_widget.addTab(panel, "Create new case")
 
     def addInitializeFromScratchTab(self):
         panel = QWidget()
@@ -123,7 +136,7 @@ class CaseInitializationConfigurationPanel(QTabWidget):
         layout.addSpacing(10)
 
         panel.setLayout(layout)
-        self.addTab(panel, "Initialize from scratch")
+        self._tab_widget.addTab(panel, "Initialize from scratch")
 
     def addShowCaseInfo(self):
         case_widget = QWidget()
@@ -151,7 +164,7 @@ class CaseInitializationConfigurationPanel(QTabWidget):
         case_selector.currentIndexChanged[int].connect(self._showInfoForCase)
         self.notifier.ertChanged.connect(self._showInfoForCase)
 
-        self.addTab(case_widget, "Case info")
+        self._tab_widget.addTab(case_widget, "Case info")
 
     def _showInfoForCase(self, index=None):
         if index is None:
@@ -173,5 +186,5 @@ class CaseInitializationConfigurationPanel(QTabWidget):
 
     @showWaitCursorWhileWaiting
     def on_tab_changed(self, p_int):
-        if self.tabText(p_int) == "Case info":
+        if self._tab_widget.tabText(p_int) == "Case info":
             self._showInfoForCase()

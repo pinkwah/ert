@@ -1,4 +1,5 @@
 from typing import Optional
+from typing_extensions import Self
 
 from qtpy.QtCore import QObject, Signal, Slot
 
@@ -16,6 +17,14 @@ class ErtNotifier(QObject):
         self._storage: Optional[StorageReader] = None
         self._current_case = None
         self._is_simulation_running = False
+
+    @classmethod
+    def instance(cls) -> Self:
+        return getattr(cls, "_instance")
+
+    @classmethod
+    def set_instance(cls, value: Self) -> None:
+        setattr(cls, "_instance", value)
 
     @property
     def storage(self) -> StorageReader:

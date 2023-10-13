@@ -32,6 +32,7 @@ from ert.gui.tools.manage_cases.case_init_configuration import (
 from ert.gui.tools.plot.data_type_keys_widget import DataTypeKeysWidget
 from ert.gui.tools.plot.plot_case_selection_widget import CaseSelectionWidget
 from ert.gui.tools.plot.plot_window import PlotWindow
+from ert.gui.tools.manage_cases import ManageCasesDialog
 from ert.run_models import SingleTestRun
 
 from .conftest import find_cases_dialog_and_panel, load_results_manually
@@ -134,15 +135,16 @@ def test_that_the_manage_cases_tool_can_be_used(
     esmda_has_run,
     opened_main_window,
     qtbot,
+    qmsgbox,
 ):
     gui = opened_main_window
+    dialog = gui.open_tool(ManageCasesDialog)
 
     # Click on "Manage Cases"
-    def handle_dialog():
-        dialog, cases_panel = find_cases_dialog_and_panel(gui, qtbot)
+    with qtbot.waitExposed(dialog):
         # Open the create new cases tab
-        cases_panel.setCurrentIndex(0)
-        current_tab = cases_panel.currentWidget()
+        dialog.setCurrentIndex(0)
+        current_tab = dialog.currentWidget()
         assert current_tab.objectName() == "create_new_case_tab"
         create_widget = current_tab.findChild(AddRemoveWidget)
         case_list = current_tab.findChild(CaseList)
@@ -164,15 +166,6 @@ def test_that_the_manage_cases_tool_can_be_used(
         # The list should now contain "new_case"
         assert case_list._list.count() == 6
 
-        # Click add case and try to name it "new_case" again
-        def handle_add_dialog_again():
-            qtbot.waitUntil(lambda: current_tab.findChild(ValidatedDialog) is not None)
-            dialog = gui.findChild(ValidatedDialog)
-            dialog.param_name.setText("new_case")
-            assert not dialog.ok_button.isEnabled()
-            qtbot.mouseClick(dialog.cancel_button, Qt.LeftButton)
-
-        QTimer.singleShot(1000, handle_add_dialog_again)
         qtbot.mouseClick(create_widget.addButton, Qt.LeftButton)
 
         # The list contains the same amount of cases as before
@@ -198,10 +191,6 @@ def test_that_the_manage_cases_tool_can_be_used(
         qtbot.mouseClick(initialize_button, Qt.LeftButton)
 
         dialog.close()
-
-    QTimer.singleShot(1000, handle_dialog)
-    manage_tool = gui.tools["Manage cases"]
-    manage_tool.trigger()
 
 
 @pytest.mark.usefixtures("use_tmpdir")

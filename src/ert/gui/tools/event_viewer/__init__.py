@@ -1,9 +1,7 @@
-from .panel import EventViewerPanel, GUILogHandler, add_gui_log_handler
-from .tool import EventViewerTool
+from .panel import EventViewerDialog, GUILogHandler, add_gui_log_handler
 
 __all__ = [
-    "EventViewerPanel",
-    "EventViewerTool",
+    "EventViewerDialog",
     "GUILogHandler",
     "add_gui_log_handler",
 ]

@@ -21,17 +21,18 @@ from qtpy.QtWidgets import QApplication
 from ert.config import ConfigValidationError, ConfigWarning, ErtConfig
 from ert.enkf_main import EnKFMain
 from ert.gui.about_dialog import AboutDialog
+from ert.gui.ertnotifier import ErtNotifier
 from ert.gui.ertwidgets import SuggestorMessage, SummaryPanel, resourceIcon
 from ert.gui.main_window import ErtMainWindow
 from ert.gui.simulation import SimulationPanel
 from ert.gui.tools.event_viewer import (
-    EventViewerTool,
+    EventViewerDialog,
     GUILogHandler,
     add_gui_log_handler,
 )
 from ert.gui.tools.export import ExportTool
 from ert.gui.tools.load_results import LoadResultsTool
-from ert.gui.tools.manage_cases import ManageCasesTool
+from ert.gui.tools.manage_cases import ManageCasesDialog
 from ert.gui.tools.plot import PlotTool
 from ert.gui.tools.plugins import PluginHandler, PluginsTool
 from ert.gui.tools.run_analysis import RunAnalysisTool
@@ -332,18 +333,19 @@ def _setup_main_window(
         window,
     )
 
+    EnKFMain.set_instance(facade._enkf_main)
+    ErtNotifier.set_instance(window.notifier)
     window.addDock(
         "Configuration summary", SummaryPanel(ert), area=Qt.BottomDockWidgetArea
     )
     window.addTool(PlotTool(config_file, window))
     window.addTool(ExportTool(ert, window.notifier))
     window.addTool(WorkflowsTool(ert, window.notifier))
-    window.addTool(ManageCasesTool(ert, window.notifier))
+    window.add_tool_button(ManageCasesDialog, "Manage cases", icon="build_wrench.svg")
     window.addTool(PluginsTool(plugin_handler, window.notifier))
     window.addTool(RunAnalysisTool(ert, window.notifier))
     window.addTool(LoadResultsTool(facade, window.notifier))
-    event_viewer = EventViewerTool(log_handler)
-    window.addTool(event_viewer)
-    window.close_signal.connect(event_viewer.close_wnd)
+    window.add_tool_button(EventViewerDialog, "Event viewer", icon="notifications.svg")
+    # window.close_signal.connect(event_viewer.close_wnd)
     window.adjustSize()
     return window

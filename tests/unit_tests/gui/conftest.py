@@ -49,16 +49,6 @@ from ert.services import StorageService
 from ert.storage import open_storage
 
 
-def find_cases_dialog_and_panel(
-    gui, qtbot: QtBot
-) -> Tuple[ClosableDialog, CaseInitializationConfigurationPanel]:
-    qtbot.waitUntil(lambda: gui.findChild(ClosableDialog, "manage-cases") is not None)
-    dialog = gui.findChild(ClosableDialog, "manage-cases")
-    cases_panel = dialog.findChild(CaseInitializationConfigurationPanel)
-    assert isinstance(cases_panel, CaseInitializationConfigurationPanel)
-    return (dialog, cases_panel)
-
-
 @pytest.mark.usefixtures("use_tmpdir")
 @pytest.fixture(name="opened_main_window", scope="module")
 def opened_main_window_fixture(source_root, tmpdir_factory):
