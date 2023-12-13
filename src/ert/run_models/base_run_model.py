@@ -1,4 +1,5 @@
 from __future__ import annotations
+import asyncio
 
 import logging
 import os
@@ -25,6 +26,8 @@ from ert.ensemble_evaluator import (
 from ert.libres_facade import LibresFacade
 from ert.run_context import RunContext
 from ert.runpaths import Runpaths
+from ert.scheduler.scheduler import Scheduler
+from ert.shared.feature_toggling import FeatureToggling
 from ert.storage import StorageAccessor
 
 from .event import (
@@ -339,7 +342,7 @@ class BaseRunModel:
                 f"MIN_REALIZATIONS to allow (more) failures in your experiments."
             )
 
-    def run_ensemble_evaluator(
+    def run_ensemble_evaluator_using_job_queue(
         self, run_context: RunContext, ee_config: EvaluatorServerConfig
     ) -> List[int]:
         ensemble = self._build_ensemble(run_context)
@@ -352,6 +355,23 @@ class BaseRunModel:
 
         run_context.sim_fs.sync()
         return successful_realizations
+
+    def run_ensemble_evaluator_using_scheduler(
+        self, run_context: RunContext, ee_config: EvaluatorServerConfig
+    ) -> List[int]:
+        return asyncio.run(self._do_scheduler(run_context))
+
+    async def _do_scheduler(self, run_context: RunContext) -> List[int]:
+        sch = Scheduler()
+
+        for real in run_context:
+            if not real.active:
+                continue
+            sch.add_realization(real)
+
+        await sch.execute()
+        run_context.sim_fs.sync()
+        return [0]
 
     def _build_ensemble(
         self,
@@ -485,9 +505,15 @@ class BaseRunModel:
         phase_string = f"Running forecast for iteration: {iteration}"
         self.setPhaseName(phase_string, indeterminate=False)
 
-        successful_realizations = self.run_ensemble_evaluator(
+        if self.use_scheduler():
+            run_ensemble_evaluator = self.run_ensemble_evaluator_using_scheduler
+        else:
+            run_ensemble_evaluator = self.run_ensemble_evaluator_using_job_queue
+
+        successful_realizations = run_ensemble_evaluator(
             run_context, evaluator_server_config
         )
+
         starting_realizations = run_context.active_realizations
         failed_realizations = list(
             set(starting_realizations) - set(successful_realizations)
@@ -525,3 +551,6 @@ class BaseRunModel:
         )
 
         return num_successful_realizations
+
+    def use_scheduler(self) -> bool:
+        return FeatureToggling.is_enabled("scheduler")

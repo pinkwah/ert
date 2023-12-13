@@ -5,7 +5,7 @@ import logging
 import threading
 import uuid
 from functools import partial, partialmethod
-from typing import TYPE_CHECKING, Any, Awaitable, Callable, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Awaitable, Callable, Dict, List, Optional, Protocol, Tuple
 
 from cloudevents.http.event import CloudEvent
 
@@ -31,6 +31,10 @@ logger = logging.getLogger(__name__)
 event_logger = logging.getLogger("ert.event_log")
 
 
+class _JobQueueProto(Protocol):
+    pass
+
+
 class LegacyEnsemble(Ensemble):
     def __init__(
         self,
@@ -44,17 +48,15 @@ class LegacyEnsemble(Ensemble):
         super().__init__(reals, metadata, id_)
         if not queue_config:
             raise ValueError(f"{self} needs queue_config")
-
-        if FeatureToggling.is_enabled("scheduler"):
-            if queue_config.queue_system != QueueSystem.LOCAL:
-                raise NotImplementedError()
-            driver = create_driver(queue_config)
-            self._job_queue = Scheduler(driver)
-        else:
-            self._job_queue = JobQueue(queue_config)
+        self._job_queue: Optional[_JobQueueProto] = None
         self.stop_long_running = stop_long_running
         self.min_required_realizations = min_required_realizations
         self._config: Optional[EvaluatorServerConfig] = None
+
+    def use_scheduler(self) -> bool:
+        if self._job_queue is not None:
+            return isinstance(self._job_queue, Scheduler)
+        return FeatureToggling.is_enabled("scheduler")
 
     def generate_event_creator(
         self, experiment_id: Optional[str] = None
@@ -149,6 +151,89 @@ class LegacyEnsemble(Ensemble):
             get_event_loop().close()
 
     async def _evaluate_inner(  # pylint: disable=too-many-branches
+        self,
+        cloudevent_unary_send: Callable[[CloudEvent], Awaitable[None]],
+        experiment_id: Optional[str] = None,
+    ) -> None:
+        """
+        This (inner) coroutine does the actual work of evaluating the ensemble. It
+        prepares and executes the necessary bookkeeping, prepares and executes
+        the JobQueue, and dispatches pertinent events.
+
+        Before returning, it always dispatches a CloudEvent describing
+        the final result of executing all its jobs through a JobQueue.
+
+        cloudevent_unary_send determines how CloudEvents are dispatched. This
+        is a function (or bound method) that only takes a CloudEvent as a positional
+        argument.
+        """
+        # Set up the timeout-mechanism
+        timeout_queue = asyncio.Queue()  # type: ignore
+        # Based on the experiment id the generator will
+        # give a function returning cloud event
+        event_creator = self.generate_event_creator(experiment_id=experiment_id)
+        on_timeout, send_timeout_future = self.setup_timeout_callback(
+            timeout_queue, cloudevent_unary_send, event_creator
+        )
+
+        if not self.id_:
+            raise ValueError("Ensemble id not set")
+        if not self._config:
+            raise ValueError("no config")  # mypy
+
+        try:
+            await cloudevent_unary_send(
+                event_creator(identifiers.EVTYPE_ENSEMBLE_STARTED, None)
+            )
+
+            for real in self.active_reals:
+                self._job_queue.add_realization(real, callback_timeout=on_timeout)
+
+            # TODO: this is sort of a callback being preemptively called.
+            # It should be lifted out of the queue/evaluate, into the evaluator. If
+            # something is long running, the evaluator will know and should send
+            # commands to the task in order to have it killed/retried.
+            # See https://github.com/equinor/ert/issues/1229
+            queue_evaluators = None
+            if self.stop_long_running and self.min_required_realizations > 0:
+                queue_evaluators = [
+                    partial(
+                        self._job_queue.stop_long_running_jobs,
+                        self.min_required_realizations,
+                    )
+                ]
+
+            self._job_queue.set_ee_info(
+                ee_uri=self._config.dispatch_uri,
+                ens_id=self.id_,
+                ee_cert=self._config.cert,
+                ee_token=self._config.token,
+            )
+
+            # Tell queue to pass info to the jobs-file
+            # NOTE: This touches files on disk...
+            self._job_queue.add_dispatch_information_to_jobs_file()
+
+            sema = threading.BoundedSemaphore(value=CONCURRENT_INTERNALIZATION)
+            result: str = await self._job_queue.execute(
+                sema,
+                queue_evaluators,
+            )
+
+        except Exception:
+            logger.exception(
+                "unexpected exception in ensemble",
+                exc_info=True,
+            )
+            result = identifiers.EVTYPE_ENSEMBLE_FAILED
+
+        await timeout_queue.put(None)  # signal to exit timer
+        await send_timeout_future
+
+        # Dispatch final result from evaluator - FAILED, CANCEL or STOPPED
+        await cloudevent_unary_send(event_creator(result, None))
+
+    async def _evaluate_with_scheduler(
         self,
         cloudevent_unary_send: Callable[[CloudEvent], Awaitable[None]],
         experiment_id: Optional[str] = None,

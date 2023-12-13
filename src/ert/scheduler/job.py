@@ -10,10 +10,10 @@ from cloudevents.http import CloudEvent
 from ert.callbacks import forward_model_ok
 from ert.job_queue.queue import _queue_state_event_type
 from ert.load_status import LoadStatus
+from ert.run_arg import RunArg
 from ert.scheduler.driver import Driver
 
 if TYPE_CHECKING:
-    from ert.ensemble_evaluator._builder._realization import Realization
     from ert.scheduler.scheduler import Scheduler
 
 
@@ -47,7 +47,7 @@ class Job:
     (LSF, PBS, SLURM, etc.)
     """
 
-    def __init__(self, scheduler: Scheduler, real: Realization) -> None:
+    def __init__(self, scheduler: Scheduler, real: RunArg) -> None:
         self.real = real
         self.started = asyncio.Event()
         self.returncode: asyncio.Future[int] = asyncio.Future()
@@ -71,7 +71,7 @@ class Job:
         try:
             await self._send(State.SUBMITTING)
             await self.driver.submit(
-                self.real.iens, self.real.job_script, cwd=self.real.run_arg.runpath
+                self.real.iens, "/usr/bin/env", "job_dispatch.py", cwd=self.real.runpath
             )
 
             await self._send(State.STARTING)

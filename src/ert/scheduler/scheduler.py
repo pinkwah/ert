@@ -21,12 +21,10 @@ from websockets import Headers
 from websockets.client import connect
 
 from ert.job_queue.queue import EVTYPE_ENSEMBLE_CANCELLED, EVTYPE_ENSEMBLE_STOPPED
+from ert.run_arg import RunArg
 from ert.scheduler.driver import Driver, JobEvent
 from ert.scheduler.job import Job
 from ert.scheduler.local_driver import LocalDriver
-
-if TYPE_CHECKING:
-    from ert.ensemble_evaluator._builder._realization import Realization
 
 
 logger = logging.getLogger(__name__)
@@ -64,7 +62,7 @@ class Scheduler:
             self._events = asyncio.Queue()
 
     def add_realization(
-        self, real: Realization, callback_timeout: Callable[[int], None]
+        self, real: RunArg
     ) -> None:
         self._jobs[real.iens] = Job(self, real)
 
@@ -116,18 +114,14 @@ class Scheduler:
 
     async def execute(
         self,
-        semaphore: Optional[threading.BoundedSemaphore] = None,
-        queue_evaluators: Optional[Iterable[Callable[..., Any]]] = None,
+        num_concurrent: int = 10
     ) -> str:
-        if queue_evaluators is not None:
-            logger.warning(f"Ignoring queue_evaluators: {queue_evaluators}")
-
         publisher_task = asyncio.create_task(self._publisher())
         poller_task = self.driver.create_poll_task()
         event_queue_task = asyncio.create_task(self._process_event_queue())
 
         start = asyncio.Event()
-        sem = asyncio.BoundedSemaphore(semaphore._initial_value if semaphore else 10)  # type: ignore
+        sem = asyncio.BoundedSemaphore(num_concurrent)
         for iens, job in self._jobs.items():
             self._tasks[iens] = asyncio.create_task(job(start, sem))
 
@@ -152,6 +146,7 @@ class Scheduler:
 
         while True:
             iens, event = await self.driver.event_queue.get()
+            print(f"{iens=}, {event=}")
             if event == JobEvent.STARTED:
                 self._jobs[iens].started.set()
             elif event == JobEvent.COMPLETED:
