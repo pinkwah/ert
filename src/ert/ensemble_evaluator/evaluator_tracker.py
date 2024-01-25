@@ -62,7 +62,6 @@ class EvaluatorTracker:
         self._iter_snapshot: Dict[int, Snapshot] = {}
 
     def _drain_monitor(self) -> None:
-        asyncio.set_event_loop(new_event_loop())
         drainer_logger = logging.getLogger("ert.ensemble_evaluator.drainer")
         while not self._model.isFinished():
             try:
@@ -220,7 +219,7 @@ class EvaluatorTracker:
         #
         try:
             logger.debug("requesting termination...")
-            get_event_loop().run_until_complete(
+            asyncio.get_event_loop().run_until_complete(
                 wait_for_evaluator(
                     base_url=self._ee_con_info.url,
                     token=self._ee_con_info.token,

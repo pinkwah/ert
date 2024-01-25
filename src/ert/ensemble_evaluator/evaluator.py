@@ -66,8 +66,8 @@ class EnsembleEvaluator:
         self._config: EvaluatorServerConfig = config
         self._ensemble: Ensemble = ensemble
 
-        self._loop = new_event_loop()
-        self._done = self._loop.create_future()
+        self._loop: Optional[asyncio.AbstractEventLoop] = None
+        self._done: Optional[asyncio.Event] = None
 
         self._clients: Set[WebSocketServerProtocol] = set()
         self._dispatchers_connected: Optional[asyncio.Queue[None]] = None
@@ -88,7 +88,7 @@ class EnsembleEvaluator:
 
         self._result = None
         self._ws_thread = threading.Thread(
-            name="ert_ee_run_server", target=self._run_server, args=(self._loop,)
+            name="ert_ee_run_server", target=self._run_server
         )
 
     @property
@@ -386,8 +386,10 @@ class EnsembleEvaluator:
 
         logger.debug("Async server exiting.")
 
-    def _run_server(self, loop: asyncio.AbstractEventLoop) -> None:
-        loop.run_until_complete(self.evaluator_server())
+    def _run_server(self) -> None:
+        self._loop = new_event_loop()
+        self._done = self._loop.create_future()
+        self._loop.run_until_complete(self.evaluator_server())
         logger.debug("Server thread exiting.")
 
     def _start_running(self) -> None:
