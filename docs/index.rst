@@ -10,10 +10,10 @@ but ERT is a general tool and is used in other domains, such as wind-farm manage
 If you're new to ERT:
 
 1. Begin by ensuring you've correctly installed it.
-   Check out the :doc:`getting_started/setup` guide for assistance.
-2. Follow the :doc:`getting_started/configuration/poly_new/guide` to learn how to use ERT for parameter estimation.
+   Check out the :doc:`manual/setup` guide for assistance.
+2. Follow the :doc:`manual/configuration/poly_new/guide` to learn how to use ERT for parameter estimation.
 
-To understand the theoretical foundations of ensemble-based methods, head over to :doc:`theory/ensemble_based_methods`.
+To understand the theoretical foundations of ensemble-based methods, head over to :doc:`manual/ensemble_based_methods`.
 
 .. toctree::
    :hidden:
@@ -22,46 +22,44 @@ To understand the theoretical foundations of ensemble-based methods, head over t
 
 .. toctree::
    :hidden:
-   :caption: Getting started
+   :caption: User Manual
 
-   getting_started/setup
-   getting_started/configuration/poly_new/guide
-   getting_started/howto/esmda_restart
-   getting_started/howto/adaptive_localization.ipynb
-   getting_started/howto/plugin_system
-   getting_started/webviz-ert/webviz-ert
+   manual/getting_started/index
+
+   manual/setup
+   manual/configuration/poly_new/guide
+   manual/howto/esmda_restart
+   manual/howto/adaptive_localization.ipynb
+   manual/webviz-ert/webviz-ert
+   manual/concepts
+   manual/forward_model
+
+   manual/ensemble_based_methods
+
+   manual/running_ert
+   manual/configuration/index
+   manual/workflows/index
+   manual/release_notes/index
 
 .. toctree::
    :hidden:
-   :caption: Reference
+   :caption: Python API
 
-   reference/running_ert
-   reference/configuration/index
-   reference/workflows/index
-
-.. toctree::
-   :hidden:
-   :caption: Theory
-
-   theory/ensemble_based_methods
+   api/plugin_system
 
 .. toctree::
    :hidden:
    :caption: Developer Documentation
 
-   developer_documentation/roadmap
-   developer_documentation/dev-strategy
-   developer_documentation/concepts
-   developer_documentation/forward_model
-   developer_documentation/storage_server
-   developer_documentation/qt
-
+   developer/roadmap
+   developer/dev-strategy
+   developer/storage_server
+   developer/qt
 
 .. toctree::
    :hidden:
    :caption: About
 
-   about/release_notes
    PyPI releases <https://pypi.org/project/ert/>
    Code in GitHub <https://github.com/equinor/ert>
    Issue tracker <https://github.com/equinor/ert/issues>

@@ -2322,7 +2322,7 @@ This happens even if the stable komodo version changes while ERT is running.
 
 Improvements to ERT CLI
 #######################
-Defining current case is now available in the cli. The see the usage and complete list of available commands, go to :doc:`../reference/running_ert`.
+Defining current case is now available in the cli. The see the usage and complete list of available commands, go to :doc:`../running_ert`.
 
 
 Improvements to ERT GUI
@@ -2382,7 +2382,7 @@ The text and shell interface has been removed from ERT, but the CLI interface ha
 included basic monitoring to show the progress of the running experiment. The CLI now also supports MDA and
 running single workflows.
 
-The see the usage and complete list of available commands, go to :doc:`../reference/running_ert`.
+The see the usage and complete list of available commands, go to :doc:`../running_ert`.
 
 
 Improvements to ERT GUI
