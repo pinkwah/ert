@@ -1,8 +1,9 @@
+from __future__ import annotations
 import datetime
 import re
 import typing
 from collections import defaultdict
-from typing import Any, Dict, Mapping, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, Mapping, Optional, Sequence, Tuple, TypedDict, Union
 
 from cloudevents.http import CloudEvent
 from dateutil.parser import parse
@@ -67,27 +68,37 @@ def convert_iso8601_to_datetime(
     return parse(timestamp)
 
 
-def _filter_nones(some_dict: Mapping[str, Any]) -> Dict[str, Any]:
+def _filter_nones(some_dict: Mapping[str, Any]) -> dict[str, Any]:
     return {key: value for key, value in some_dict.items() if value is not None}
+
+
+class _RealizationState(BaseModel):
+    status: Optional[str] = None
+    start_time: Optional[datetime.datetime] = None
+    end_time: Optional[datetime.datetime] = None
+
+
+class _ForwardModelState(BaseModel):
+    pass
 
 
 class PartialSnapshot:
     def __init__(self, snapshot: Optional["Snapshot"] = None) -> None:
-        self._realization_states: Dict[
-            str, Dict[str, Union[bool, datetime.datetime, str]]
-        ] = defaultdict(dict)
+        self._realization_states: dict[
+            str, _RealizationState
+        ] = defaultdict(_RealizationState)
         """A shallow dictionary of realization states. The key is a string with
         realization number, pointing to a dict with keys active (bool),
         start_time (datetime), end_time (datetime) and status (str)."""
 
-        self._forward_model_states: Dict[
-            Tuple[str, str], Dict[str, Union[str, datetime.datetime]]
-        ] = defaultdict(dict)
+        self._forward_model_states: dict[
+            tuple[str, str], _ForwardModelState
+        ] = defaultdict(_ForwardModelState)
         """A shallow dictionary of forward_model states. The key is a tuple of two
         strings with realization id and forward_model id, pointing to a dict with
         the same members as the ForwardModel."""
 
-        self._ensemble_state: Optional[str] = None
+        self._ensemble_state: str | None = None
         # TODO not sure about possible values at this point, as GUI hijacks this one as
         # well
         self._metadata: Dict[str, Any] = defaultdict(dict)
@@ -136,7 +147,7 @@ class PartialSnapshot:
 
     def get_all_forward_models(
         self,
-    ) -> Mapping[Tuple[str, str], "ForwardModel"]:
+    ) -> dict[tuple[str, str], ForwardModel]:
         if self._snapshot:
             return self._snapshot.get_all_forward_models()
         return {}
@@ -331,7 +342,7 @@ class Snapshot:
 
     def get_all_forward_models(
         self,
-    ) -> Mapping[Tuple[str, str], "ForwardModel"]:
+    ) -> dict[tuple[str, str], ForwardModel]:
         return {
             idx: ForwardModel(**forward_model_state)
             for idx, forward_model_state in self._my_partial._forward_model_states.items()

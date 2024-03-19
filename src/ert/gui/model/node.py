@@ -1,36 +1,76 @@
-from enum import Enum, auto
-from typing import Dict, Optional
+from __future__ import annotations
+from datetime import datetime
+
+from typing import TYPE_CHECKING
+from dataclasses import dataclass, field
+from functools import cached_property
 
 
-class NodeType(Enum):
-    ROOT = auto()
-    ITER = auto()
-    REAL = auto()
-    JOB = auto()
+if TYPE_CHECKING:
+    from qtpy.QtGui import QColor
 
 
-class Node:
-    def __init__(self, id_: int, data: Dict, type_: NodeType) -> None:
-        self.parent: Optional[Node] = None
-        self.data: Dict = data
-        self.children: Dict[int, Node] = {}
-        self.id = id_
-        self.type = type_
+@dataclass
+class RootNode:
+    children: dict[int, IterNode] = field(default_factory=dict)
 
-    def __repr__(self) -> str:
-        parent = "no " if self.parent is None else ""
-        children = "no " if len(self.children) == 0 else f"{len(self.children)} "
-        return f"Node<{self.type}>@{self.id} with {parent}parent and {children}children"
+@dataclass
+class IterNode:
+    parent: RootNode
+    id: int
+    status: str
+    sorted_realization_ids: list[str]
+    sorted_job_ids: list[str]
 
-    def add_child(self, node: "Node", node_id: Optional[int] = None) -> None:
-        node.parent = self
-        if node_id is None:
-            node_id = node.id
-        self.children[node_id] = node
+    children: dict[str, RealNode] = field(default_factory=dict)
 
-    def row(self) -> int:
-        if "index" in self.data:
-            return int(self.data["index"])
-        if self.parent:
-            return list(self.parent.children.keys()).index(self.id)
-        raise ValueError(f"{self} had no parent")
+    @cached_property
+    def index(self) -> int:
+        for index, id_ in enumerate(self.parent.children):
+            if id_ == self.id:
+                return index
+        raise IndexError(f"Could not find iter {self.id} in {self.parent}")
+
+@dataclass
+class RealNode:
+    parent: IterNode
+
+    id: int
+
+    status: str
+    active: bool
+    real_job_status_aggregated: dict[str, QColor]
+    real_status_color: QColor
+
+    children: dict[str, StepNode] = field(default_factory=dict)
+
+    @cached_property
+    def index(self) -> int:
+        for index, id_ in enumerate(self.parent.children):
+            if id_ == self.id:
+                return index
+        raise IndexError(f"Could not find iter {self.id} in {self.parent}")
+
+@dataclass
+class StepNode:
+    parent: RealNode
+
+    id: str
+    index_: str
+
+    status: str | None = None
+    data: str | None = None
+    stdout: str | None = None
+    stderr: str | None = None
+    current_memory_usage: str | None = None
+    error: str | None = None
+    max_memory_usage: str | None = None
+    start_time: datetime | None = None
+    end_time: datetime | None = None
+
+    @cached_property
+    def index(self) -> int:
+        for index, id_ in enumerate(self.parent.children):
+            if id_ == self.id:
+                return index
+        raise IndexError(f"Could not find iter {self.id} in {self.parent}")

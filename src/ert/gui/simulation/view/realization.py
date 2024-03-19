@@ -14,6 +14,7 @@ from qtpy.QtWidgets import (
 )
 
 from ert.ensemble_evaluator import state
+from ert.gui.model.node import RealNode
 from ert.gui.model.real_list import RealListModel
 from ert.gui.model.snapshot import RealJobColorHint, RealLabelHint, RealStatusColorHint
 
@@ -74,9 +75,11 @@ class RealizationDelegate(QStyledItemDelegate):
         self._size = QSize(width, height)
 
     def paint(self, painter, option: QStyleOptionViewItem, index: QModelIndex) -> None:
-        text = index.data(RealLabelHint)
+        if not isinstance((item := index.internalPointer()), RealNode):
+            return
+        text = item.id
         colors = tuple(index.data(RealJobColorHint))
-        queue_color = index.data(RealStatusColorHint)
+        queue_color =  index.data(RealStatusColorHint)
 
         painter.save()
         painter.setRenderHint(QPainter.Antialiasing, False)

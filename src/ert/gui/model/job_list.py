@@ -6,18 +6,11 @@ from qtpy.QtCore import (
     QModelIndex,
     QObject,
     Qt,
-    QVariant,
     Slot,
 )
 
-from ert.gui.model.node import NodeType
-from ert.gui.model.snapshot import (
-    COLUMNS,
-    IsEnsembleRole,
-    IsJobRole,
-    IsRealizationRole,
-    NodeRole,
-)
+from ert.gui.model.node import IterNode, NodeType, RealNode
+from ert.gui.model.snapshot import REAL_COLUMN_INDEX
 
 
 class JobListProxyModel(QAbstractProxyModel):
@@ -79,15 +72,15 @@ class JobListProxyModel(QAbstractProxyModel):
         self.endResetModel()
 
     def headerData(
-        self, section: int, orientation: Qt.Orientation, role: Qt.UserRole
+        self, section: int, orientation: Qt.Orientation, role: Qt.ItemDataRole
     ) -> Any:
-        if role != Qt.DisplayRole:
-            return QVariant()
-        if orientation == Qt.Horizontal:
-            return COLUMNS[NodeType.REAL][section][0]
-        if orientation == Qt.Vertical:
+        if role != Qt.ItemDataRole.DisplayRole:
+            return None
+        if orientation == Qt.Orientation.Horizontal:
+            return str(REAL_COLUMN_INDEX[section])
+        if orientation == Qt.Orientation.Vertical:
             return section
-        return QVariant()
+        return None
 
     def columnCount(self, parent=None) -> int:
         if parent is None:
@@ -118,7 +111,7 @@ class JobListProxyModel(QAbstractProxyModel):
         if parent.isValid():
             return QModelIndex()
         job_index = self.mapToSource(self.createIndex(row, column, parent))
-        return self.createIndex(row, column, job_index.data(NodeRole))
+        return self.createIndex(row, column, job_index.internalPointer())
 
     def mapToSource(self, proxyIndex: QModelIndex) -> QModelIndex:
         if not proxyIndex.isValid():
@@ -165,8 +158,9 @@ class JobListProxyModel(QAbstractProxyModel):
         # traverse upwards and check real and iter against parents of
         # this index.
         while index.isValid() and index.internalPointer() is not None:
-            if (index.data(IsRealizationRole) and (index.row() != self._real)) or (
-                index.data(IsEnsembleRole) and (index.row() != self._iter)
+            item = index.internalPointer()
+            if (isinstance(item, RealNode) and (index.row() != self._real)) or (
+                isinstance(item, IterNode) and (index.row() != self._iter)
             ):
                 return False
             index = index.parent()

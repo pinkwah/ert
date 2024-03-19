@@ -9,7 +9,7 @@ from qtpy.QtCore import (
     Slot,
 )
 
-from ert.gui.model.snapshot import IsEnsembleRole, IsRealizationRole, NodeRole
+from ert.gui.model.node import IterNode, RealNode
 
 
 class RealListModel(QAbstractProxyModel):
@@ -97,7 +97,7 @@ class RealListModel(QAbstractProxyModel):
         if parent.isValid():
             return QModelIndex()
         real_index = self.mapToSource(self.createIndex(row, 0, parent))
-        ret_index = self.createIndex(row, column, real_index.data(NodeRole))
+        ret_index = self.createIndex(row, column, real_index.internalPointer())
         return ret_index
 
     def hasChildren(self, parent: QModelIndex) -> bool:
@@ -131,9 +131,7 @@ class RealListModel(QAbstractProxyModel):
     def _source_data_changed(
         self, top_left: QModelIndex, bottom_right: QModelIndex, roles: typing.List[int]
     ):
-        if top_left.internalPointer() is None:
-            return
-        if not top_left.data(IsRealizationRole):
+        if (top_left_item := top_left.internalPointer()) is None or not isinstance(top_left_item, RealNode):
             return
         proxy_top_left = self.mapFromSource(top_left)
         proxy_bottom_right = self.mapFromSource(bottom_right)
@@ -158,17 +156,15 @@ class RealListModel(QAbstractProxyModel):
         self.endInsertRows()
 
     def _accept_index(self, index: QModelIndex) -> bool:
-        if index.internalPointer() is None:
-            return False
         # If the index under test isn't a realization, it is of no interest as
         # this model should only consist of realization indices.
-        if not index.data(IsRealizationRole):
+        if not isinstance(index.internalPointer(), RealNode):
             return False
 
         # traverse upwards the tree, checking whether this index is accepted or
         # not.
         while index.isValid() and index.internalPointer() is not None:
-            if index.data(IsEnsembleRole) and index.row() != self._iter:
+            if isinstance(index.internalPointer(), IterNode) and index.row() != self._iter:
                 return False
             index = index.parent()
         return True

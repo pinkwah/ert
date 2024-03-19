@@ -1,3 +1,4 @@
+from __future__ import annotations
 from collections import OrderedDict
 
 ENSEMBLE_STATE_STARTED = "Starting"
@@ -47,7 +48,7 @@ REAL_STATE_TO_COLOR = OrderedDict(
     ]
 )
 
-FORWARD_MODEL_STATE_TO_COLOR = {
+FORWARD_MODEL_STATE_TO_COLOR: dict[str, tuple[int, int, int]] = {
     FORWARD_MODEL_STATE_START: COLOR_PENDING,
     FORWARD_MODEL_STATE_RUNNING: COLOR_RUNNING,
     FORWARD_MODEL_STATE_FINISHED: COLOR_FINISHED,

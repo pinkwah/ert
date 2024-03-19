@@ -3,8 +3,9 @@ from typing import Dict, List, Optional, Union
 
 from qtpy.QtCore import QAbstractItemModel, QModelIndex, QSize, Qt, QVariant
 from qtpy.QtGui import QColor, QFont
+from ert.gui.model.node import IterNode
 
-from ert.gui.model.snapshot import IsEnsembleRole, ProgressRole, StatusRole
+from ert.gui.model.snapshot import ProgressRole, StatusRole
 
 
 class ProgressProxyModel(QAbstractItemModel):
@@ -102,9 +103,7 @@ class ProgressProxyModel(QAbstractItemModel):
         _bottom_right: QModelIndex,
         _roles: List[int],
     ):
-        if top_left.internalPointer() is None:
-            return
-        if not top_left.data(IsEnsembleRole):
+        if not isinstance(top_left.internalPointer(), IterNode):
             return
         self._recalculate_progress(top_left.row())
         index = self.index(0, 0, QModelIndex())
