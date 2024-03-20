@@ -3,7 +3,7 @@ import datetime
 import re
 import typing
 from collections import defaultdict
-from typing import Any, Dict, Mapping, Optional, Sequence, Tuple, TypedDict, Union
+from typing import TYPE_CHECKING, Any, Dict, Mapping, NotRequired, Optional, Sequence, Tuple, TypeVar, TypedDict, Union, no_type_check
 
 from cloudevents.http import CloudEvent
 from dateutil.parser import parse
@@ -68,32 +68,37 @@ def convert_iso8601_to_datetime(
     return parse(timestamp)
 
 
-def _filter_nones(some_dict: Mapping[str, Any]) -> dict[str, Any]:
+class _RealizationState(TypedDict):
+    status: NotRequired[str]
+    start_time: NotRequired[datetime.datetime]
+    end_time: NotRequired[datetime.datetime]
+
+
+class _ForwardModelState(TypedDict):
+    status: NotRequired[str]
+
+
+if TYPE_CHECKING:
+    _T = TypeVar("_T", _RealizationState, _ForwardModelState)
+
+
+@no_type_check
+def _filter_nones(some_dict: _T) -> _T:
     return {key: value for key, value in some_dict.items() if value is not None}
-
-
-class _RealizationState(BaseModel):
-    status: Optional[str] = None
-    start_time: Optional[datetime.datetime] = None
-    end_time: Optional[datetime.datetime] = None
-
-
-class _ForwardModelState(BaseModel):
-    pass
 
 
 class PartialSnapshot:
     def __init__(self, snapshot: Optional["Snapshot"] = None) -> None:
         self._realization_states: dict[
             str, _RealizationState
-        ] = defaultdict(_RealizationState)
+        ] = defaultdict(lambda: {})
         """A shallow dictionary of realization states. The key is a string with
         realization number, pointing to a dict with keys active (bool),
         start_time (datetime), end_time (datetime) and status (str)."""
 
         self._forward_model_states: dict[
             tuple[str, str], _ForwardModelState
-        ] = defaultdict(_ForwardModelState)
+        ] = defaultdict(lambda: {})
         """A shallow dictionary of forward_model states. The key is a tuple of two
         strings with realization id and forward_model id, pointing to a dict with
         the same members as the ForwardModel."""
@@ -132,8 +137,8 @@ class PartialSnapshot:
         self,
         real_id: str,
         forward_model_id: str,
-        forward_model: "ForwardModel",
-    ) -> "PartialSnapshot":
+        forward_model: ForwardModel,
+    ) -> PartialSnapshot:
         forward_model_update = _filter_nones(forward_model.model_dump())
 
         self._forward_model_states[(real_id, forward_model_id)].update(
@@ -154,7 +159,7 @@ class PartialSnapshot:
 
     def get_forward_model_status_for_all_reals(
         self,
-    ) -> Mapping[Tuple[str, str], Union[str, datetime.datetime]]:
+    ) -> dict[tuple[str, str], str]:
         if self._snapshot:
             return self._snapshot.get_forward_model_status_for_all_reals()
         return {}
@@ -326,7 +331,7 @@ class Snapshot:
     def merge(self, update_as_nested_dict: Mapping[str, Any]) -> None:
         self._my_partial._merge(_from_nested_dict(update_as_nested_dict))
 
-    def merge_metadata(self, metadata: Dict[str, Any]) -> None:
+    def merge_metadata(self, metadata: dict[str, Any]) -> None:
         self._my_partial._metadata.update(metadata)
 
     def to_dict(self) -> Dict[str, Any]:
@@ -350,10 +355,11 @@ class Snapshot:
 
     def get_forward_model_status_for_all_reals(
         self,
-    ) -> Mapping[Tuple[str, str], Union[str, datetime.datetime]]:
+    ) -> dict[tuple[str, str], str]:
         return {
             idx: forward_model_state["status"]
             for idx, forward_model_state in self._my_partial._forward_model_states.items()
+            if "status" in forward_model_state
         }
 
     @property

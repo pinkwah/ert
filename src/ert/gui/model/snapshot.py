@@ -4,8 +4,8 @@ import datetime
 from enum import Enum
 import logging
 from collections import defaultdict
-from contextlib import ExitStack
-from typing import Any, Final, List, Mapping, Sequence
+from contextlib import ExitStack, suppress
+from typing import Any, List, Mapping, Sequence
 
 from dateutil import tz
 from qtpy.QtCore import QAbstractItemModel, QModelIndex, QObject, Qt, QPersistentModelIndex
@@ -13,13 +13,12 @@ from qtpy.QtGui import QColor
 
 from ert.ensemble_evaluator import PartialSnapshot, Snapshot, state
 from ert.ensemble_evaluator import identifiers as ids
-from ert.gui.model.node import IterNode, RealNode, RootNode, StepNode
+from ert.gui.model.node import COLOR_RUNNING, IterNode, RealNode, RootNode, StepNode
 from ert.shared.status.utils import byte_with_unit
 
 logger = logging.getLogger(__name__)
 
 
-RealJobColorHint = Qt.ItemDataRole.UserRole + 2
 RealStatusColorHint = Qt.ItemDataRole.UserRole + 3
 ProgressRole = Qt.ItemDataRole.UserRole + 5
 FileRole = Qt.ItemDataRole.UserRole + 6
@@ -67,10 +66,6 @@ class RealColumn(str, Enum):
 ROOT_COLUMN_INDEX: dict[int, RootColumn] = dict(enumerate(RootColumn.__members__.values()))
 ITER_COLUMN_INDEX: dict[int, IterColumn] = dict(enumerate(IterColumn.__members__.values()))
 REAL_COLUMN_INDEX: dict[int, RealColumn] = dict(enumerate(RealColumn.__members__.values()))
-
-COLOR_WAITING: Final[QColor] = QColor(*state.COLOR_WAITING)
-COLOR_PENDING: Final[QColor] = QColor(*state.COLOR_PENDING)
-COLOR_RUNNING: Final[QColor] = QColor(*state.COLOR_RUNNING)
 
 _QCOLORS: dict[tuple[int, int, int], QColor] = {
     state.COLOR_WAITING: QColor(*state.COLOR_WAITING),
@@ -124,21 +119,20 @@ class SnapshotModel(QAbstractItemModel):
                     state.REAL_STATE_TO_COLOR[real.status]
                 ]
 
-        isSnapshot = False
-        if isinstance(snapshot, Snapshot):
-            isSnapshot = True
+        is_snapshot = isinstance(snapshot, Snapshot)
+        if is_snapshot:
             metadata[SORTED_REALIZATION_IDS] = sorted(snapshot.reals.keys(), key=int)
             metadata[SORTED_JOB_IDS] = defaultdict(list)
         for (
             real_id,
             forward_model_id,
         ), forward_model_status in forward_model_states.items():
-            if isSnapshot:
+            if is_snapshot:
                 metadata[SORTED_JOB_IDS][real_id].append(forward_model_id)
             color = _QCOLORS[state.FORWARD_MODEL_STATE_TO_COLOR[forward_model_status]]
             metadata[REAL_JOB_STATUS_AGGREGATED][real_id][forward_model_id] = color
 
-        if isSnapshot:
+        if is_snapshot:
             snapshot.merge_metadata(metadata)
         elif isinstance(snapshot, PartialSnapshot):
             snapshot.update_metadata(metadata)
@@ -330,29 +324,6 @@ class SnapshotModel(QAbstractItemModel):
         return None
 
     def _real_data(self, node: RealNode, role: int) -> Any:
-        if role == RealJobColorHint:
-            colors: List[QColor] = []
-
-            is_running = False
-
-            if COLOR_RUNNING in node.real_job_status_aggregated.values():
-                is_running = True
-
-            for forward_model_id in node.parent.sorted_job_ids[node.id]:
-                # if queue system status is WAIT, jobs should indicate WAIT
-                if (
-                    node.real_job_status_aggregated[forward_model_id]
-                    == COLOR_PENDING
-                    and node.real_status_color == COLOR_WAITING
-                    and not is_running
-                ):
-                    colors.append(COLOR_WAITING)
-                else:
-                    colors.append(
-                        node.real_job_status_aggregated[forward_model_id]
-                    )
-
-            return colors
         if role == RealLabelHint:
             return node.id
         if role == RealIens:
@@ -439,20 +410,17 @@ class SnapshotModel(QAbstractItemModel):
 
         return None
 
-    def index(self, row: int, column: int, parent: QModelIndex) -> QModelIndex:
+    def index(self, row: int, column: int, parent: QModelIndex | QPersistentModelIndex = ...) -> QModelIndex:
         if not self.hasIndex(row, column, parent):
             return QModelIndex()
 
-        parent_item = self.root if not parent.isValid() else parent.internalPointer()
-        child_item = None
-        try:
-            child_item = list(parent_item.children.values())[row]
-        except KeyError:
-            return QModelIndex()
-        else:
-            return self.createIndex(row, column, child_item)
+        item = self.root if not parent.isValid() else parent.internalPointer()
+        with suppress(KeyError):
+            if isinstance(item, (RootNode, IterNode, RealNode)):
+                return self.createIndex(row, column, list(item.children.values())[row])
+        return QModelIndex()
 
-    def reset(self):
+    def reset(self) -> None:
         self.modelAboutToBeReset.emit()
         self.root = RootNode()
         self.modelReset.emit()

@@ -78,13 +78,13 @@ class RealizationDelegate(QStyledItemDelegate):
         if not isinstance((item := index.internalPointer()), RealNode):
             return
         text = item.id
-        colors = tuple(index.data(RealJobColorHint))
-        queue_color =  index.data(RealStatusColorHint)
+        colors = item.color_hints()
+        queue_color = item.status_color
 
         painter.save()
-        painter.setRenderHint(QPainter.Antialiasing, False)
-        painter.setRenderHint(QPainter.TextAntialiasing, True)
-        painter.setRenderHint(QPainter.SmoothPixmapTransform, False)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, False)
+        painter.setRenderHint(QPainter.RenderHint.TextAntialiasing, True)
+        painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, False)
 
         painter.setBrush(QColorConstants.Blue)
         painter.setPen(QPen(QColorConstants.Black, 1))

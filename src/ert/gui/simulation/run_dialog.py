@@ -1,7 +1,8 @@
 import logging
-from typing import Optional
+from typing import Any, Optional
 
 from PyQt5.QtWidgets import QAbstractItemView
+from PySide6.QtCore import QPersistentModelIndex
 from qtpy.QtCore import QModelIndex, QSize, Qt, QThread, QTimer, Signal, Slot
 from qtpy.QtGui import QMovie
 from qtpy.QtWidgets import (
@@ -30,6 +31,7 @@ from ert.ensemble_evaluator import (
 from ert.gui.ertnotifier import ErtNotifier
 from ert.gui.ertwidgets.message_box import ErtMessageBox
 from ert.gui.model.job_list import JobListProxyModel
+from ert.gui.model.node import StepNode
 from ert.gui.model.progress_proxy import ProgressProxyModel
 from ert.gui.model.snapshot import FileRole, IterNum, RealIens, SnapshotModel
 from ert.gui.tools.file import FileDialog
@@ -112,7 +114,7 @@ class RunDialog(QDialog):
         self._job_view.setVerticalScrollMode(QAbstractItemView.ScrollPerItem)
         self._job_view.setSelectionBehavior(QAbstractItemView.SelectRows)
         self._job_view.setSelectionMode(QAbstractItemView.SingleSelection)
-        self._job_view.clicked.connect(self._job_clicked)
+        self._job_view.clicked.connect(self._step_clicked)
         self._job_view.setModel(self._job_model)
 
         self.running_time = QLabel("")
@@ -222,9 +224,13 @@ class RunDialog(QDialog):
             )
 
     @Slot(QModelIndex)
-    def _job_clicked(self, index):
+    def _step_clicked(self, index: QModelIndex | QPersistentModelIndex) -> Any:
         if not index.isValid():
+            return None
+
+        if not isinstance((item := index.internalPointer()), StepNode):
             return
+
         selected_file = index.data(FileRole)
         file_dialog = self.findChild(QDialog, name=selected_file)
         if file_dialog and file_dialog.isVisible():
