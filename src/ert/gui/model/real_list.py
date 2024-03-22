@@ -131,7 +131,9 @@ class RealListModel(QAbstractProxyModel):
     def _source_data_changed(
         self, top_left: QModelIndex, bottom_right: QModelIndex, roles: typing.List[int]
     ):
-        if (top_left_item := top_left.internalPointer()) is None or not isinstance(top_left_item, RealNode):
+        if (top_left_item := top_left.internalPointer()) is None or not isinstance(
+            top_left_item, RealNode
+        ):
             return
         proxy_top_left = self.mapFromSource(top_left)
         proxy_bottom_right = self.mapFromSource(bottom_right)
@@ -164,7 +166,10 @@ class RealListModel(QAbstractProxyModel):
         # traverse upwards the tree, checking whether this index is accepted or
         # not.
         while index.isValid() and index.internalPointer() is not None:
-            if isinstance(index.internalPointer(), IterNode) and index.row() != self._iter:
+            if (
+                isinstance(index.internalPointer(), IterNode)
+                and index.row() != self._iter
+            ):
                 return False
             index = index.parent()
         return True

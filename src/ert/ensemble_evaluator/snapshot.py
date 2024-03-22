@@ -3,7 +3,20 @@ import datetime
 import re
 import typing
 from collections import defaultdict
-from typing import TYPE_CHECKING, Any, Dict, Mapping, NotRequired, Optional, Sequence, Tuple, TypeVar, TypedDict, Union, no_type_check
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    Mapping,
+    NotRequired,
+    Optional,
+    Sequence,
+    Tuple,
+    TypeVar,
+    TypedDict,
+    Union,
+    no_type_check,
+)
 
 from cloudevents.http import CloudEvent
 from dateutil.parser import parse
@@ -89,9 +102,7 @@ def _filter_nones(some_dict: _T) -> _T:
 
 class PartialSnapshot:
     def __init__(self, snapshot: Optional["Snapshot"] = None) -> None:
-        self._realization_states: dict[
-            str, _RealizationState
-        ] = defaultdict(lambda: {})
+        self._realization_states: dict[str, _RealizationState] = defaultdict(lambda: {})
         """A shallow dictionary of realization states. The key is a string with
         realization number, pointing to a dict with keys active (bool),
         start_time (datetime), end_time (datetime) and status (str)."""
