@@ -9,8 +9,7 @@ from qtpy.QtCore import (
     Slot,
 )
 
-from ert.gui.model.node import IterNode, NodeType, RealNode
-from ert.gui.model.snapshot import REAL_COLUMN_INDEX
+from ert.gui.model.node import IterNode, RealNode
 
 
 class JobListProxyModel(QAbstractProxyModel):
@@ -77,7 +76,7 @@ class JobListProxyModel(QAbstractProxyModel):
         if role != Qt.ItemDataRole.DisplayRole:
             return None
         if orientation == Qt.Orientation.Horizontal:
-            return str(REAL_COLUMN_INDEX[section])
+            raise NotImplementedError()
         if orientation == Qt.Orientation.Vertical:
             return section
         return None

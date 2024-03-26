@@ -16,7 +16,6 @@ from qtpy.QtWidgets import (
 from ert.ensemble_evaluator import state
 from ert.gui.model.node import RealNode
 from ert.gui.model.real_list import RealListModel
-from ert.gui.model.snapshot import RealJobColorHint, RealLabelHint, RealStatusColorHint
 
 COLOR_RUNNING: Final[QColor] = QColor(*state.COLOR_RUNNING)
 COLOR_FINISHED: Final[QColor] = QColor(*state.COLOR_FINISHED)

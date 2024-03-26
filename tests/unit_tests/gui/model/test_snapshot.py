@@ -8,7 +8,8 @@ from ert.ensemble_evaluator.state import (
     COLOR_RUNNING,
     FORWARD_MODEL_STATE_RUNNING,
 )
-from ert.gui.model.snapshot import RealJobColorHint, SnapshotModel
+from ert.gui.model.node import RealNode
+from ert.gui.model.snapshot import SnapshotModel
 
 from .gui_models_utils import partial_snapshot
 
@@ -55,6 +56,9 @@ def test_realization_job_hint(full_snapshot):
     model._add_partial_snapshot(SnapshotModel.prerender(partial), 0)
 
     first_real = model.index(0, 0, model.index(0, 0))
-    colors = model.data(first_real, RealJobColorHint)
+    item = first_real.internalPointer()
+    assert isinstance(item, RealNode)
+
+    colors = item.color_hints
     assert colors[0].name() == QColor(*COLOR_RUNNING).name()
     assert colors[1].name() == QColor(*COLOR_PENDING).name()
