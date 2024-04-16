@@ -12,14 +12,7 @@ from pathlib import Path
 from textwrap import dedent
 from unittest.mock import MagicMock
 
-from qtpy.QtWidgets import QApplication
-
 from _ert.threading import set_signal_handler
-
-if sys.version_info >= (3, 9):
-    from importlib.resources import files
-else:
-    from importlib_resources import files
 
 import pytest
 from hypothesis import HealthCheck, settings
@@ -57,12 +50,6 @@ def log_check():
 def _reraise_thread_exceptions_on_main_thread():
     """Allow `ert.shared.threading.ErtThread` to re-raise exceptions on main thread"""
     set_signal_handler()
-
-
-@pytest.fixture
-def _qt_add_search_paths(qapp):
-    "Ensure that icons and such are found by the tests"
-    QDir.addSearchPath("img", str(files("ert.gui").joinpath("resources/gui/img")))
 
 
 # Timeout settings are unreliable both on CI and
@@ -275,23 +262,6 @@ def pytest_addoption(parser):
     parser.addoption("--show-gui", action="store_true", default=False)
 
 
-@pytest.fixture
-def _qt_excepthook(monkeypatch):
-    """Hook into Python's unhandled exception handler and quit Qt if it's
-    running. This will prevent a stall in the event that a Python exception
-    occurs inside a Qt slot.
-
-    """
-    next_excepthook = sys.excepthook
-
-    def excepthook(cls, exc, tb):
-        if app := QApplication.instance():
-            app.quit()
-        next_excepthook(cls, exc, tb)
-
-    monkeypatch.setattr(sys, "excepthook", excepthook)
-
-
 @pytest.fixture(
     params=[
         pytest.param(False, id="using_job_queue"),
@@ -311,17 +281,6 @@ def using_scheduler(request, monkeypatch):
 
 
 def pytest_collection_modifyitems(config, items):
-    for item in items:
-        fixtures = getattr(item, "fixturenames", ())
-        if "qtbot" in fixtures or "qapp" in fixtures or "qtmodeltester" in fixtures:
-            item.add_marker("requires_window_manager")
-
-    # Override Python's excepthook on all "requires_window_manager" tests
-    for item in items:
-        if item.get_closest_marker("requires_window_manager"):
-            item.fixturenames.append("_qt_excepthook")
-            item.fixturenames.append("_qt_add_search_paths")
-
     if config.getoption("--runslow"):
         # --runslow given in cli: do not skip slow tests
         skip_quick = pytest.mark.skip(

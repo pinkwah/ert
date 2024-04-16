@@ -147,11 +147,9 @@ platforms = ["all"]
 [tool.pytest.ini_options]
 addopts = "-ra --strict-markers"
 markers = [
-    "integration_test",
     "quick_only",
     "requires_eclipse",
     "requires_lsf",
-    "requires_window_manager",
     "script",
     "slow",
     "unstable",

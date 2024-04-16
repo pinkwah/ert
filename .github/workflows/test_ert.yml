@@ -44,17 +44,17 @@ jobs:
     - name: Test GUI
       if: inputs.test-type == 'gui-test'
       run: |
-        pytest tests --junit-xml=junit.xml -v --mpl -m "requires_window_manager" --benchmark-disable
+        pytest tests/gui --junit-xml=junit.xml -v --mpl --benchmark-disable
 
     - name: Unit Test
       if: inputs.test-type == 'unit-tests'
       run: |
-        pytest tests --junit-xml=junit.xml -n logical --show-capture=stderr -v -m "not integration_test and not requires_window_manager" --benchmark-disable --dist loadgroup
+        pytest tests/unit --junit-xml=junit.xml -n logical --show-capture=stderr -v --benchmark-disable --dist loadgroup
 
     - name: Integration Test
       if: inputs.test-type == 'integration-tests'
       run: |
-        pytest tests --junit-xml=junit.xml -n logical --show-capture=stderr -v -m "integration_test and not requires_window_manager" --benchmark-disable
+        pytest tests/integration --junit-xml=junit.xml -n logical --show-capture=stderr -v --benchmark-disable
 
     - name: Test for a clean repository
       run: |
