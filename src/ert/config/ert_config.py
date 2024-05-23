@@ -121,7 +121,7 @@ class ErtConfig:
 
         Raises:
             ConfigValidationError: Signals one or more incorrectly configured
-            value(s) that the user needs to fix before ert can run.
+                value(s) that the user needs to fix before ert can run.
 
 
         Warnings will be issued with :python:`warnings.warn(category=ConfigWarning)`

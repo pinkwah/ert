@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List, Optional, Union
+from typing import List, Optional, TypeAlias, Union
 
 
 @dataclass
@@ -98,7 +98,7 @@ class SIESRunArguments(SimulationArguments):
     prev_successful_realizations = 0
 
 
-RunArgumentsType = Union[
+RunArgumentsType: TypeAlias = Union[
     SingleTestRunArguments,
     EnsembleExperimentRunArguments,
     EvaluateEnsembleRunArguments,
@@ -106,3 +106,5 @@ RunArgumentsType = Union[
     ESMDARunArguments,
     SIESRunArguments,
 ]
+
+__all__ = ["RunArgumentsType"]

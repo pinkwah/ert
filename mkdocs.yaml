@@ -1,0 +1,59 @@
+site_name: Ert
+site_description: Ensemble based Reservoir Tool
+strict: true
+site_url: https://equinor.github.io/ert
+
+repo_name: equinor/ert
+repo_url: https://github.com/equinor/ert
+edit_uri: edit/main/docs/
+docs_dir: mkdocs
+
+theme: 'material'
+
+nav:
+- Getting Started:
+  - Welcome to Ert: index.md
+  - Setup: setup.md
+- Python API:
+  - Config: api/config.md
+  - Storage: api/storage.md
+  - Run Models: api/run_models.md
+- Developer Documentation:
+  - Reference: private/reference.md
+
+markdown_extensions:
+- tables
+- toc:
+    permalink: true
+    title: Page contents
+- admonition
+- pymdownx.details
+- pymdownx.superfences
+- pymdownx.highlight:
+    pygments_lang_class: true
+- pymdownx.emoji:
+    emoji_index: !!python/name:material.extensions.emoji.twemoji
+    emoji_generator: !!python/name:material.extensions.emoji.to_svg
+- pymdownx.tabbed:
+    alternate_style: true
+
+watch:
+- src/ert
+
+plugins:
+- search
+- mkdocstrings:
+    default_handler: python
+    handlers:
+      python:
+        paths: [./src]
+        options:
+          members_order: source
+          separate_signature: true
+          docstrings_options:
+            ignore_init_summary: true
+          merge_init_into_class: true
+          show_signature_annotations: true
+          signature_crossrefs: true
+        import:
+        - https://docs.python.org/3/objects.inv
