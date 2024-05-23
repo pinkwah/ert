@@ -21,12 +21,17 @@ from cloudevents.http.event import CloudEvent
 from _ert.async_utils import get_running_loop, new_event_loop
 from _ert.threading import ErtThread
 from ert.ensemble_evaluator import identifiers
-from ert.job_queue import JobQueue
 from ert.scheduler import Scheduler, create_driver
 from ert.shared.feature_toggling import FeatureScheduler
 
 from .._wait_for_evaluator import wait_for_evaluator
+from ert import HAS_CLIB
+
+
 from ._ensemble import Ensemble
+
+if HAS_CLIB:
+    from ert.job_queue import JobQueue
 
 if TYPE_CHECKING:
     from ert.config import QueueConfig
@@ -205,7 +210,7 @@ class LegacyEnsemble(Ensemble):
                     ee_token=self._config.token,
                 )
                 scheduler_logger.info("Experiment ran on ORCHESTRATOR: scheduler")
-            else:
+            elif HAS_CLIB:
                 queue = JobQueue(
                     self._queue_config,
                     self.active_reals,
@@ -216,6 +221,8 @@ class LegacyEnsemble(Ensemble):
                     on_timeout=on_timeout,
                 )
                 scheduler_logger.info("Experiment ran on ORCHESTRATOR: job_queue")
+            else:
+                raise RuntimeError("Cannot use JobQueue: Ert CLib not installed")
             self._job_queue = queue
 
             await cloudevent_unary_send(

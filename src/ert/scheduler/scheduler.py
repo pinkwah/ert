@@ -27,7 +27,7 @@ from websockets.client import connect
 
 from _ert.async_utils import get_running_loop
 from ert.constant_filenames import CERT_FILE
-from ert.job_queue.queue import (
+from ert.event_type_constants import (
     CLOSE_PUBLISHER_SENTINEL,
     EVTYPE_ENSEMBLE_CANCELLED,
     EVTYPE_ENSEMBLE_STOPPED,

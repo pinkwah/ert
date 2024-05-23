@@ -39,7 +39,6 @@ args = dict(
         # supported OS X release 10.15
         "-DCMAKE_OSX_DEPLOYMENT_TARGET=10.15",
     ],
-    cmake_source_dir="src/clib/",
 )
 
 setup(**args)
@@ -52,5 +51,4 @@ if sys.argv[1] == "develop":
     from setuptools import setup as setuptools_setup
 
     del args["cmake_args"]
-    del args["cmake_source_dir"]
     setuptools_setup(**args)

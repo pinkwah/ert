@@ -32,6 +32,7 @@ from ert.event_type_constants import (
     EVTYPE_REALIZATION_SUCCESS,
     EVTYPE_REALIZATION_UNKNOWN,
     EVTYPE_REALIZATION_WAITING,
+    CLOSE_PUBLISHER_SENTINEL,
 )
 from ert.job_queue.job_queue_node import JobQueueNode
 from ert.job_queue.job_status import JobStatus
@@ -48,35 +49,12 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-CLOSE_PUBLISHER_SENTINEL = object()
 LONG_RUNNING_FACTOR = 1.25
 """If STOP_LONG_RUNNING is true, realizations taking more time than the average
 times this ￼factor will be killed."""
 CONCURRENT_INTERNALIZATION = 1
 """How many realizations allowed to be concurrently internalized using
 threads."""
-
-
-_queue_state_to_event_type_map = {
-    "NOT_ACTIVE": EVTYPE_REALIZATION_WAITING,
-    "WAITING": EVTYPE_REALIZATION_WAITING,
-    "SUBMITTED": EVTYPE_REALIZATION_WAITING,
-    "PENDING": EVTYPE_REALIZATION_PENDING,
-    "RUNNING": EVTYPE_REALIZATION_RUNNING,
-    "DONE": EVTYPE_REALIZATION_RUNNING,
-    "EXIT": EVTYPE_REALIZATION_RUNNING,
-    "IS_KILLED": EVTYPE_REALIZATION_FAILURE,
-    "DO_KILL": EVTYPE_REALIZATION_FAILURE,
-    "SUCCESS": EVTYPE_REALIZATION_SUCCESS,
-    "STATUS_FAILURE": EVTYPE_REALIZATION_UNKNOWN,
-    "FAILED": EVTYPE_REALIZATION_FAILURE,
-    "DO_KILL_NODE_FAILURE": EVTYPE_REALIZATION_FAILURE,
-    "UNKNOWN": EVTYPE_REALIZATION_UNKNOWN,
-}
-
-
-def _queue_state_event_type(state: str) -> str:
-    return _queue_state_to_event_type_map[state]
 
 
 class JobQueue(BaseCClass):  # type: ignore

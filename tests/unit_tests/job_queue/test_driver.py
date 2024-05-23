@@ -1,10 +1,18 @@
+import pytest
 import os
 
 from ert.config import QueueConfig, QueueSystem
-from ert.job_queue import Driver
+from ert import HAS_CLIB
 
 
-def test_set_and_unset_option():
+@pytest.mark.skipif(not HAS_CLIB, reason="ert._clib not installed")
+@pytest.fixture
+def create_driver():
+    from ert.job_queue import Driver
+    return Driver.create_driver
+
+
+def test_set_and_unset_option(create_driver):
     queue_config = QueueConfig(
         job_script="script.sh",
         queue_system=QueueSystem.LOCAL,
@@ -16,7 +24,7 @@ def test_set_and_unset_option():
             ]
         },
     )
-    driver = Driver.create_driver(queue_config)
+    driver = create_driver(queue_config)
     assert driver.get_option("MAX_RUNNING") == "0"
     assert driver.set_option("MAX_RUNNING", "42")
     assert driver.get_option("MAX_RUNNING") == "42"
@@ -28,16 +36,16 @@ def test_set_and_unset_option():
     assert driver.get_option("MAX_RUNNING") == "0"
 
 
-def test_get_driver_name():
+def test_get_driver_name(create_driver):
     queue_config = QueueConfig(queue_system=QueueSystem.LOCAL)
-    assert Driver.create_driver(queue_config).name == "LOCAL"
+    assert create_driver(queue_config).name == "LOCAL"
     queue_config = QueueConfig(queue_system=QueueSystem.SLURM)
-    assert Driver.create_driver(queue_config).name == "SLURM"
+    assert create_driver(queue_config).name == "SLURM"
     queue_config = QueueConfig(queue_system=QueueSystem.LSF)
-    assert Driver.create_driver(queue_config).name == "LSF"
+    assert create_driver(queue_config).name == "LSF"
 
 
-def test_get_slurm_queue_config():
+def test_get_slurm_queue_config(create_driver):
     queue_config = QueueConfig(
         job_script=os.path.abspath("script.sh"),
         queue_system=QueueSystem.SLURM,
@@ -52,7 +60,7 @@ def test_get_slurm_queue_config():
     )
 
     assert queue_config.queue_system == QueueSystem.SLURM
-    driver = Driver.create_driver(queue_config)
+    driver = create_driver(queue_config)
 
     assert driver.get_option("SBATCH") == "/path/to/sbatch"
     assert driver.get_option("SCONTROL") == "scontrol"

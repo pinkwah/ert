@@ -8,8 +8,6 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Mapping, Tuple, no_type_check
 
-from ert import _clib
-
 from .parsing import (
     ConfigDict,
     ConfigValidationError,
@@ -34,12 +32,20 @@ OPENPBS_DRIVER_OPTIONS: List[str] = [
     "QUEUE",
     "QUEUE_QUERY_TIMEOUT",
     "SUBMIT_SLEEP",
+    *GENERIC_QUEUE_OPTIONS,
 ]
+SLURM_DRIVER_OPTIONS: List[str] = [
+    "SBATCH", "SCANCEL", "SCONTROL", "SQUEUE", "PARTITION", "SQUEUE_TIMEOUT", "MAX_RUNTIME", "MEMORY", "MEMORY_PER_CPU", "INCLUDE_HOST", "EXCLUDE_HOST", *GENERIC_QUEUE_OPTIONS
+]
+LSF_DRIVER_OPTIONS: List[str] = [
+    "LSF_QUEUE", "LSF_RESOURCE", "LSF_SERVER", "LSF_RSH_CMD", "LSF_LOGIN_SHELL", "BSUB_CMD", "BJOBS_CMD", "BKILL_CMD", "BHIST_CMD", "BJOBS_TIMEOUT", "DEBUG_OUTPUT", "SUBMIT_SLEEP", "EXCLUDE_HOST", "PROJECT_CODE", *GENERIC_QUEUE_OPTIONS
+]
+
 VALID_QUEUE_OPTIONS: Dict[Any, List[str]] = {
-    QueueSystem.TORQUE: OPENPBS_DRIVER_OPTIONS + GENERIC_QUEUE_OPTIONS,
-    QueueSystem.LOCAL: [] + GENERIC_QUEUE_OPTIONS,  # No specific options in driver
-    QueueSystem.SLURM: _clib.slurm_driver.SLURM_DRIVER_OPTIONS + GENERIC_QUEUE_OPTIONS,
-    QueueSystem.LSF: _clib.lsf_driver.LSF_DRIVER_OPTIONS + GENERIC_QUEUE_OPTIONS,
+    QueueSystem.TORQUE: OPENPBS_DRIVER_OPTIONS,
+    QueueSystem.LOCAL: GENERIC_QUEUE_OPTIONS,  # No specific options in driver
+    QueueSystem.SLURM: SLURM_DRIVER_OPTIONS,
+    QueueSystem.LSF: LSF_DRIVER_OPTIONS,
 }
 
 

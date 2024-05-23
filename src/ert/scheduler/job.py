@@ -15,14 +15,47 @@ from lxml import etree
 
 from ert.callbacks import forward_model_ok
 from ert.constant_filenames import ERROR_file
-from ert.job_queue.queue import _queue_state_event_type
 from ert.load_status import LoadStatus
 from ert.scheduler.driver import Driver
 from ert.storage.realization_storage_state import RealizationStorageState
+from ert.event_type_constants import (
+    EVTYPE_ENSEMBLE_CANCELLED,
+    EVTYPE_ENSEMBLE_FAILED,
+    EVTYPE_ENSEMBLE_STOPPED,
+    EVTYPE_REALIZATION_FAILURE,
+    EVTYPE_REALIZATION_PENDING,
+    EVTYPE_REALIZATION_RUNNING,
+    EVTYPE_REALIZATION_SUCCESS,
+    EVTYPE_REALIZATION_UNKNOWN,
+    EVTYPE_REALIZATION_WAITING,
+    CLOSE_PUBLISHER_SENTINEL,
+)
 
 if TYPE_CHECKING:
     from ert.ensemble_evaluator._builder._realization import Realization
     from ert.scheduler.scheduler import Scheduler
+
+
+_queue_state_to_event_type_map = {
+    "NOT_ACTIVE": EVTYPE_REALIZATION_WAITING,
+    "WAITING": EVTYPE_REALIZATION_WAITING,
+    "SUBMITTED": EVTYPE_REALIZATION_WAITING,
+    "PENDING": EVTYPE_REALIZATION_PENDING,
+    "RUNNING": EVTYPE_REALIZATION_RUNNING,
+    "DONE": EVTYPE_REALIZATION_RUNNING,
+    "EXIT": EVTYPE_REALIZATION_RUNNING,
+    "IS_KILLED": EVTYPE_REALIZATION_FAILURE,
+    "DO_KILL": EVTYPE_REALIZATION_FAILURE,
+    "SUCCESS": EVTYPE_REALIZATION_SUCCESS,
+    "STATUS_FAILURE": EVTYPE_REALIZATION_UNKNOWN,
+    "FAILED": EVTYPE_REALIZATION_FAILURE,
+    "DO_KILL_NODE_FAILURE": EVTYPE_REALIZATION_FAILURE,
+    "UNKNOWN": EVTYPE_REALIZATION_UNKNOWN,
+}
+
+
+def _queue_state_event_type(state: str) -> str:
+    return _queue_state_to_event_type_map[state]
 
 logger = logging.getLogger(__name__)
 

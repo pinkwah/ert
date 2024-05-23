@@ -12,7 +12,7 @@ import numpy as np
 from numpy.random import SeedSequence
 
 from .config import ParameterConfig
-from .job_queue import WorkflowRunner
+from .workflow_runner import WorkflowRunner
 from .run_context import RunContext
 from .runpaths import Runpaths
 from .substitution_list import SubstitutionList

@@ -1,3 +1,4 @@
+from __future__ import annotations
 import asyncio
 import json
 import os
@@ -11,9 +12,15 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from ert.config import QueueConfig, QueueSystem
-from ert.job_queue import Driver, JobQueue, JobQueueNode, JobStatus
 from ert.run_arg import RunArg
 from ert.storage import Ensemble
+from ert import HAS_CLIB
+
+
+if HAS_CLIB:
+    from ert.job_queue import Driver, JobQueue, JobQueueNode, JobStatus
+else:
+    pytestmark = pytest.mark.skipif(not HAS_CLIB, reason="ert._clib not installed")
 
 
 def wait_for(

@@ -8,6 +8,9 @@ import ert
 from ert.load_status import LoadStatus
 
 
+pytestmark = pytest.mark.skipif(not ert.HAS_CLIB, reason="ert._clib not installed")
+
+
 @pytest.fixture
 def mock_fm_ok(monkeypatch):
     fm_ok = MagicMock(return_value=(LoadStatus.LOAD_SUCCESSFUL, ""))

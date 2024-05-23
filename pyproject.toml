@@ -1,14 +1,7 @@
 [build-system]
 requires = [
-    "setuptools<64; python_version < '3.12'",
-    "setuptools; python_version >= '3.12'",
-    "setuptools_scm[toml]>=8.1",
-    "wheel",
-    "scikit-build",
-    "cmake",
-    "ninja",
-    "conan<2",
-    "pybind11>=2.10.0",  # If this comes out of sync with the version installed by Conan please update the version in CMakeLists
+    "setuptools",
+    "setuptools_scm>=8.1",
 ]
 build-backend = "setuptools.build_meta"
 
@@ -143,6 +136,10 @@ types = [
 
 [tool.setuptools]
 platforms = ["all"]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [tool.pytest.ini_options]
 addopts = "-ra --strict-markers"

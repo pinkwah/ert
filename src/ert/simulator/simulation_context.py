@@ -12,14 +12,17 @@ from _ert.threading import ErtThread
 from ert.config import HookRuntime
 from ert.enkf_main import create_run_path
 from ert.ensemble_evaluator import Realization
-from ert.job_queue import JobQueue, JobStatus
 from ert.run_context import RunContext
 from ert.runpaths import Runpaths
 from ert.scheduler import Scheduler, create_driver
 from ert.scheduler.job import State as JobState
 from ert.shared.feature_toggling import FeatureScheduler
+from ert import HAS_CLIB
 
 from .forward_model_status import ForwardModelStatus
+
+if HAS_CLIB:
+    from ert.job_queue import JobQueue, JobStatus
 
 if TYPE_CHECKING:
     import numpy.typing as npt
@@ -54,7 +57,7 @@ async def _submit_and_run_jobqueue(
     for index, run_arg in enumerate(run_context):
         if not run_context.is_active(index):
             continue
-        if isinstance(job_queue, JobQueue):
+        if HAS_CLIB and isinstance(job_queue, JobQueue):
             job_queue.add_job_from_run_arg(
                 run_arg,
                 ert.ert_config.queue_config.job_script,
@@ -99,8 +102,10 @@ class SimulationContext:
             self._job_queue = Scheduler(
                 driver, max_running=ert.ert_config.queue_config.max_running
             )
-        else:
+        elif HAS_CLIB:
             self._job_queue = JobQueue(ert.ert_config.queue_config)
+        else:
+            raise RuntimeError("Cannot use JobQueue: Ert CLib not installed")
         # fill in the missing geo_id data
         global_substitutions = ert.ert_config.substitution_list
         global_substitutions["<CASE_NAME>"] = _slug(ensemble.name)

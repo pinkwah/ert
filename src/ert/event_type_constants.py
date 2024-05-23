@@ -1,3 +1,5 @@
+CLOSE_PUBLISHER_SENTINEL = object()
+
 EVTYPE_REALIZATION_FAILURE = "com.equinor.ert.realization.failure"
 EVTYPE_REALIZATION_PENDING = "com.equinor.ert.realization.pending"
 EVTYPE_REALIZATION_RUNNING = "com.equinor.ert.realization.running"

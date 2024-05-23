@@ -2,7 +2,7 @@ import logging
 
 import pytest
 
-from ert._clib import _test_logger
+from ert import HAS_CLIB
 
 RECORDS = [
     ("ert._test_logger", logging.DEBUG, "debug: foo"),
@@ -13,6 +13,7 @@ RECORDS = [
 ]
 
 
+@pytest.mark.skipif(not HAS_CLIB, reason="ert._clib not installed")
 @pytest.mark.parametrize(
     "level,records",
     [
@@ -24,6 +25,7 @@ RECORDS = [
     ],
 )
 def test_logging_from_c(caplog, level, records):
+    from ert._clib import _test_logger
     caplog.set_level(level)
 
     _test_logger("foo")
