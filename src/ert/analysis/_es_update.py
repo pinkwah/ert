@@ -27,6 +27,8 @@ from iterative_ensemble_smoother.experimental import (
 )
 from typing_extensions import Self
 
+from ert.storage.local_experiment import LocalExperiment
+
 from ..config.analysis_config import ObservationGroups, UpdateSettings
 from ..config.analysis_module import ESSettings, IESSettings
 from . import misfit_preprocessor
@@ -672,6 +674,8 @@ def _write_update_report(
     path: Path, snapshot: SmootherSnapshot, run_id: str, experiment: Experiment
 ) -> None:
     update_step = snapshot.update_step_snapshots
+
+    assert isinstance(experiment, LocalExperiment)
 
     (experiment._path / f"update_log_{run_id}.json").write_text(
         snapshot.model_dump_json()

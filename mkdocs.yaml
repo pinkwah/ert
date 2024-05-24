@@ -16,8 +16,11 @@ nav:
   - Setup: setup.md
 - Python API:
   - Config: api/config.md
-  - Storage: api/storage.md
+  - Storage:
+    - Overview: api/storage/index.md
+    - open_storage: api/storage/open_storage.md
   - Run Models: api/run_models.md
+  - Reference: api/reference.md
 - Developer Documentation:
   - Reference: private/reference.md
 
@@ -55,5 +58,7 @@ plugins:
           merge_init_into_class: true
           show_signature_annotations: true
           signature_crossrefs: true
+          show_root_heading: true
+          show_source: false
         import:
         - https://docs.python.org/3/objects.inv

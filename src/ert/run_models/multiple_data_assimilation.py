@@ -93,7 +93,6 @@ class MultipleDataAssimilation(BaseRunModel):
                 experiment = prior.experiment
                 self.set_env_key("_ERT_EXPERIMENT_ID", str(experiment.id))
                 self.set_env_key("_ERT_ENSEMBLE_ID", str(prior.id))
-                assert isinstance(prior, Ensemble)
                 prior_context = RunContext(
                     ensemble=prior,
                     runpaths=self.run_paths,

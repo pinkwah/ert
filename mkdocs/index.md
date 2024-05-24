@@ -13,6 +13,6 @@ If you're new to ERT:
 
 1. Begin by ensuring you've correctly installed it.
    Check out the [Setup](setup) guide for assistance.
-2. Follow the [getting_started/configuration/poly_new/guide] to learn how to use ERT for parameter estimation.
+2. Follow the [Guide](guide) to learn how to use ERT for parameter estimation.
 
 To understand the theoretical foundations of ensemble-based methods, head over to :doc:`theory/ensemble_based_methods`.

@@ -53,7 +53,6 @@ class EvaluateEnsemble(BaseRunModel):
         self.setPhaseName("Running evaluate experiment...", indeterminate=False)
         ensemble_name = self.simulation_arguments.current_ensemble
         ensemble = self._storage.get_ensemble_by_name(ensemble_name)
-        assert isinstance(ensemble, Ensemble)
         experiment = ensemble.experiment
         self.set_env_key("_ERT_EXPERIMENT_ID", str(experiment.id))
         self.set_env_key("_ERT_ENSEMBLE_ID", str(ensemble.id))

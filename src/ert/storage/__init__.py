@@ -1,7 +1,5 @@
-"""
-# Ert Storage
+"""```
 
-The results of an Ert experiment evaluation is stored in Ert storage.
 """
 from __future__ import annotations
 
@@ -26,12 +24,15 @@ def open_storage(
 ) -> Storage:
     """Open storage for reading or writing
 
+    This factory function is the only entry point into the Storage API.
+
     Args:
         path: Path where the storage is located
         mode ("r" | "w"): Open in read-only ("r") or read-write ("w") mode
 
     Returns:
-        Returns an instance of `Storage`
+        Returns a new instance of `Storage`
+
     """
 
     return LocalStorage(Path(path), Mode(mode))

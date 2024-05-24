@@ -5,7 +5,7 @@ import json
 from datetime import datetime
 from functools import cached_property
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, Generator, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, Generator, Iterable, List, Optional
 from uuid import UUID
 
 import numpy as np
@@ -24,6 +24,7 @@ from ert.config import (
 from ert.config.parsing.context_values import ContextBoolEncoder
 from ert.config.response_config import ResponseConfig
 from ert.storage.mode import BaseMode, Mode, require_write
+from ert.storage.protocol import Ensemble, Experiment
 
 if TYPE_CHECKING:
     from ert.config.parameter_config import ParameterConfig
@@ -52,7 +53,7 @@ class _Index(BaseModel):
     name: str
 
 
-class LocalExperiment(BaseMode):
+class LocalExperiment(Experiment):
     """
     Represents an experiment within the local storage system of ERT.
 
@@ -97,8 +98,8 @@ class LocalExperiment(BaseMode):
         uuid: UUID,
         path: Path,
         *,
-        parameters: Optional[List[ParameterConfig]] = None,
-        responses: Optional[List[ResponseConfig]] = None,
+        parameters: Iterable[ParameterConfig] = (),
+        responses: Iterable[ResponseConfig] = (),
         observations: Optional[Dict[str, xr.Dataset]] = None,
         simulation_arguments: Optional[RunArgumentsType] = None,
         name: Optional[str] = None,
@@ -136,14 +137,14 @@ class LocalExperiment(BaseMode):
         (path / "index.json").write_text(_Index(id=uuid, name=name).model_dump_json())
 
         parameter_data = {}
-        for parameter in parameters or []:
+        for parameter in parameters:
             parameter.save_experiment_data(path)
             parameter_data.update({parameter.name: parameter.to_dict()})
         with open(path / cls._parameter_file, "w", encoding="utf-8") as f:
             json.dump(parameter_data, f, indent=2)
 
         response_data = {}
-        for response in responses or []:
+        for response in responses:
             response_data.update({response.name: response.to_dict()})
         with open(path / cls._responses_file, "w", encoding="utf-8") as f:
             json.dump(response_data, f, default=str, indent=2)
@@ -169,8 +170,8 @@ class LocalExperiment(BaseMode):
         ensemble_size: int,
         name: str,
         iteration: int = 0,
-        prior_ensemble: Optional[LocalEnsemble] = None,
-    ) -> LocalEnsemble:
+        prior_ensemble: Optional[Ensemble] = None,
+    ) -> Ensemble:
         """
         Create a new ensemble associated with this experiment.
         Requires ERT to be in write mode.
@@ -201,7 +202,7 @@ class LocalExperiment(BaseMode):
         )
 
     @property
-    def ensembles(self) -> Generator[LocalEnsemble, None, None]:
+    def ensembles(self) -> Iterable[Ensemble]:
         yield from (
             ens for ens in self._storage.ensembles if ens.experiment_id == self.id
         )

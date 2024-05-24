@@ -11,6 +11,7 @@ from typing import (
     TYPE_CHECKING,
     Dict,
     Generator,
+    Iterable,
     List,
     MutableSequence,
     Optional,
@@ -33,6 +34,7 @@ from ert.storage.mode import (
     Mode,
     require_write,
 )
+from ert.storage.protocol import Ensemble, Experiment, Storage
 from ert.storage.realization_storage_state import RealizationStorageState
 
 if TYPE_CHECKING:
@@ -56,7 +58,7 @@ class _Index(BaseModel):
     migrations: MutableSequence[_Migrations] = Field(default_factory=list)
 
 
-class LocalStorage(BaseMode):
+class LocalStorage(Storage):
     """A class representing the local storage for ERT experiments and ensembles.
 
     This class manages the file-based storage system used by ERT to store
@@ -121,24 +123,24 @@ class LocalStorage(BaseMode):
         self._ensembles = self._load_ensembles()
         self._experiments = self._load_experiments()
 
-    def get_experiment(self, uuid: UUID) -> LocalExperiment:
+    def get_experiment(self, uuid: UUID) -> Experiment:
         return self._experiments[uuid]
 
-    def get_ensemble(self, uuid: UUID) -> LocalEnsemble:
+    def get_ensemble(self, uuid: UUID) -> Ensemble:
         return self._ensembles[uuid]
 
-    def get_ensemble_by_name(self, name: str) -> Union[LocalEnsemble, LocalEnsemble]:
+    def get_ensemble_by_name(self, name: str) -> Ensemble:
         for ens in self._ensembles.values():
             if ens.name == name:
                 return ens
         raise KeyError(f"Ensemble with name '{name}' not found")
 
     @property
-    def experiments(self) -> Generator[LocalExperiment, None, None]:
+    def experiments(self) -> Iterable[Experiment]:
         yield from self._experiments.values()
 
     @property
-    def ensembles(self) -> Generator[LocalEnsemble, None, None]:
+    def ensembles(self) -> Iterable[Ensemble]:
         yield from self._ensembles.values()
 
     def _load_index(self) -> _Index:
@@ -182,7 +184,7 @@ class LocalStorage(BaseMode):
     def _experiment_path(self, experiment_id: UUID) -> Path:
         return self.path / "experiments" / str(experiment_id)
 
-    def __enter__(self) -> LocalStorage:
+    def __enter__(self) -> Storage:
         return self
 
     def __exit__(
@@ -230,12 +232,12 @@ class LocalStorage(BaseMode):
     @require_write
     def create_experiment(
         self,
-        parameters: Optional[List[ParameterConfig]] = None,
-        responses: Optional[List[ResponseConfig]] = None,
+        parameters: Iterable[ParameterConfig] = (),
+        responses: Iterable[ResponseConfig] = (),
         observations: Optional[Dict[str, xr.Dataset]] = None,
         simulation_arguments: Optional[RunArgumentsType] = None,
         name: Optional[str] = None,
-    ) -> LocalExperiment:
+    ) -> Experiment:
         exp_id = uuid4()
         path = self._experiment_path(exp_id)
         path.mkdir(parents=True, exist_ok=False)
@@ -257,13 +259,13 @@ class LocalStorage(BaseMode):
     @require_write
     def create_ensemble(
         self,
-        experiment: Union[LocalExperiment, UUID],
+        experiment: Union[Experiment, UUID],
         *,
         ensemble_size: int,
         iteration: int = 0,
         name: Optional[str] = None,
-        prior_ensemble: Union[LocalEnsemble, UUID, None] = None,
-    ) -> LocalEnsemble:
+        prior_ensemble: Union[Ensemble, UUID, None] = None,
+    ) -> Ensemble:
         experiment_id = experiment if isinstance(experiment, UUID) else experiment.id
 
         uuid = uuid4()

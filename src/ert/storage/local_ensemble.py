@@ -18,6 +18,7 @@ from typing_extensions import deprecated
 from ert.config.gen_data_config import GenDataConfig
 from ert.config.gen_kw_config import GenKwConfig
 from ert.storage.mode import BaseMode, Mode, require_write
+from ert.storage.protocol import Ensemble, Experiment
 
 from .realization_storage_state import RealizationStorageState
 
@@ -46,7 +47,7 @@ class _Failure(BaseModel):
     time: datetime
 
 
-class LocalEnsemble(BaseMode):
+class LocalEnsemble(Ensemble):
     """
     Represents an ensemble within the local storage system of ERT.
 
@@ -178,7 +179,7 @@ class LocalEnsemble(BaseMode):
         return self._index.prior_ensemble_id
 
     @property
-    def experiment(self) -> LocalExperiment:
+    def experiment(self) -> Experiment:
         return self._storage.get_experiment(self.experiment_id)
 
     def get_realization_mask_without_parent_failure(self) -> npt.NDArray[np.bool_]:

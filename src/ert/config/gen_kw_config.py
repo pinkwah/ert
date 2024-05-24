@@ -25,6 +25,8 @@ import xarray as xr
 from scipy.stats import norm
 from typing_extensions import Self
 
+from ert.storage.local_experiment import LocalExperiment
+
 from ._str_to_bool import str_to_bool
 from .parameter_config import ParameterConfig, parse_config
 from .parsing import ConfigValidationError, ConfigWarning, ErrorInfo
@@ -285,6 +287,7 @@ class GenKwConfig(ParameterConfig):
             if target_file.startswith("/"):
                 target_file = target_file[1:]
             (run_path / target_file).parent.mkdir(exist_ok=True, parents=True)
+            assert isinstance(ensemble.experiment, LocalExperiment)
             template_file_path = (
                 ensemble.experiment.mount_point / Path(self.template_file).name
             )
