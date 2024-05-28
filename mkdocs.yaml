@@ -62,3 +62,4 @@ plugins:
           show_source: false
         import:
         - https://docs.python.org/3/objects.inv
+        - https://docs.xarray.dev/en/stable/objects.inv

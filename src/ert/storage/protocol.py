@@ -133,32 +133,12 @@ class Experiment(ABC, BaseMode):
     @property
     @abstractmethod
     def id(self) -> UUID:
-        pass
+        """Get the UUID of the experiment"""
 
     @property
     @abstractmethod
     def ensembles(self) -> Iterable[Ensemble]:
-        pass
-
-    @property
-    @abstractmethod
-    def update_parameters(self) -> list[str]:
-        pass
-
-    @property
-    @abstractmethod
-    def observations(self) -> dict[str, xr.Dataset]:
-        pass
-
-    @property
-    @abstractmethod
-    def parameter_configuration(self) -> dict[str, ParameterConfig]:
-        pass
-
-    @cached_property
-    @abstractmethod
-    def response_configuration(self) -> dict[str, ResponseConfig]:
-        pass
+        """Iterator for ensembles that belong this experiment"""
 
     @abstractmethod
     def create_ensemble(
@@ -169,7 +149,36 @@ class Experiment(ABC, BaseMode):
         iteration: int = 0,
         prior_ensemble: Ensemble | None = None,
     ) -> Ensemble:
+        """Create an [ensemble][ert.storage.Ensemble] that has belongs to this experiment"""
+
+    @property
+    @abstractmethod
+    def update_parameters(self) -> list[str]:
+        """Parameters that will be updated by a"""
+
+    @property
+    @abstractmethod
+    def observations(self) -> dict[str, xr.Dataset]:
+        """Observation data"""
+
+    @property
+    @abstractmethod
+    def parameter_configuration(self) -> dict[str, ParameterConfig]:
         pass
+
+    @property
+    @abstractmethod
+    def response_configuration(self) -> dict[str, ResponseConfig]:
+        pass
+
+    @abstractmethod
+    def refresh(self) -> None:
+        """Manually refresh the cached data for this experiment.
+
+        This method is used to refresh the state of the experiment to reflect any
+        changes made since the experiment was last accessed.
+
+        """
 
 
 

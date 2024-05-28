@@ -37,20 +37,19 @@ class Mode(str, Enum):
 
 
 class BaseMode:
-    """
-    Base class for classes that require read/write access control to storage.
+    """Base class for classes that require read/write access control to
+    storage.
 
     This class provides a property to check if write operations are permitted
     and a method to assert write access before performing write operations.
+
     """
 
     def __init__(self, mode: Mode) -> None:
         """Initialize the base mode with the specified access mode.
 
-        Parameters
-        ----------
-        mode : Mode
-            The access mode for storage interaction.
+        Args:
+            mode: The access mode for storage interaction.
         """
 
         self.__mode = mode
