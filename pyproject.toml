@@ -21,7 +21,7 @@ classifiers = [
     "Topic :: Scientific/Engineering",
     "Topic :: Scientific/Engineering :: Physics",
 ]
-dynamic = ["version"]
+version = "14.1.0"
 dependencies = [
     "aiohttp",
     "cryptography",

@@ -665,6 +665,7 @@ wheels = [
 [[package]]
 name = "ert"
 source = { editable = "." }
+version = "14.1.0"
 dependencies = [
     { name = "aiohttp" },
     { name = "cryptography" },
