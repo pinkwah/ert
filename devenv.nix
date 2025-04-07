@@ -18,14 +18,16 @@ in {
     XDG_CONFIG_DIRS = "${config.devenv.state}";
   };
 
-  packages = with pkgs; [
+  packages = with pkgs; ([
     libz
     qt6.qtbase
     qt6.qtsvg
+
+  ] ++ (lib.optionals pkgs.stdenv.isLinux [
     qt6.qtwayland
 
-    # Theming
+    # Theming on Linux
     qadwaitadecorations-qt6
     kdePackages.plasma-integration
-  ];
+  ]));
 }
